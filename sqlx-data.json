@@ -1,0 +1,83 @@
+{
+  "db": "PostgreSQL",
+  "21306cc2018b0a5568cda7a9ca138690f4b63f8fc1be94d7e4cf7a3976aec712": {
+    "query": "SELECT name FROM commands WHERE guild_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "3e1e878bce843945fc4070efd586d7c6ab97e46cde092fba1775813bf6eb521c": {
+    "query": "DELETE FROM commands WHERE guild_id = $1 AND name = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "6b691922ab0edf9d2c8db1c785936fd20aab4655bfd4769b84bad4526c2aa42a": {
+    "query": "SELECT prefix FROM guild_info WHERE guild_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "prefix",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "7f35d77a17d502bc2fede4148aec943830be3f66ac412dcc2eadedb7195023c1": {
+    "query": "INSERT INTO commands(guild_id, name, content)\n            VALUES($1, $2, $3)\n            ON CONFLICT (guild_id, name)\n            DO UPDATE\n            SET content = EXCLUDED.content",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "fa8bb4180f831c6f43c463e96921ee8a8fff8941ce439b4f09ad1555a07eaf80": {
+    "query": "UPDATE guild_info SET prefix = $1 WHERE guild_id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  }
+}
