@@ -1,0 +1,27 @@
+version: '3.7'
+services:
+  botstone:
+    container_name: botstone
+    image: botstone
+    build:
+      context: .
+      labels:
+        dev.bloodstone.description: "Discord bot"
+    restart: "no"
+    volumes:
+      - './.env:/.env:ro'
+  postgres:
+    container_name: postgres
+    image: 'postgres:12.4'
+    restart: "no"
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD?:REQUIRED}"
+      POSTGRES_USER: "${POSTGRES_USER?:REQUIRED}"
+      POSTGRES_DB: "${POSTGRES_DB?:REQUIRED}"
+    volumes:
+    - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
