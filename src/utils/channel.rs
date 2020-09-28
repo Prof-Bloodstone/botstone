@@ -15,11 +15,6 @@ impl AsEmoji for &str {
 impl AsEmoji for String {
     fn as_emoji(&self) -> Result<ReactionType, ReactionConversionError> {
         return ReactionType::try_from((*self).clone()).and_then(|reaction| match &reaction {
-            ReactionType::Custom {
-                animated: _,
-                id: _,
-                name: _,
-            } => Ok(reaction),
             ReactionType::Unicode(string) => {
                 let chars = string.chars().collect::<Vec<char>>();
                 return if chars.len() != 1 || !is_emoji(chars[0].clone()) {
@@ -28,8 +23,7 @@ impl AsEmoji for String {
                     Ok(reaction)
                 };
             }
-            ReactionType::__Nonexhaustive => unreachable!(),
+            _ => Ok(reaction)
         });
     }
 }
-

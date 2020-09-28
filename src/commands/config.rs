@@ -1,7 +1,7 @@
 use crate::{
-    utils::permissions,
     structures::context::{CommandNameMap, ConnectionPool},
-    utils::defaults::*
+    utils::defaults::*,
+    utils::permissions,
 };
 use serenity::framework::standard::{macros::command, Args, CommandResult};
 use serenity::model::prelude::*;
@@ -43,7 +43,11 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     Ok(())
 }
 
-pub async fn get_prefix(pool: &PgPool, guild_id: GuildId, default_prefix: String) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn get_prefix(
+    pool: &PgPool,
+    guild_id: GuildId,
+    default_prefix: String,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let mut cur_prefix = default_prefix;
     let guild_data = sqlx::query!(
         "SELECT prefix FROM guild_info WHERE guild_id = $1",

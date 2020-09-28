@@ -1,3 +1,4 @@
+use crate::version_data::VersionData;
 use serenity::{
     client::bridge::gateway::ShardManager,
     model::id::UserId,
@@ -5,7 +6,6 @@ use serenity::{
 };
 use sqlx::PgPool;
 use std::sync::Arc;
-use crate::version_data::VersionData;
 
 // All command context data structures
 pub struct ShardManagerContainer;
@@ -33,12 +33,6 @@ pub struct PublicData {
 
 impl TypeMapKey for PublicData {
     type Value = Arc<Self>;
-}
-
-pub struct BotId;
-
-impl TypeMapKey for BotId {
-    type Value = Arc<UserId>;
 }
 
 pub struct VersionDataContainer;

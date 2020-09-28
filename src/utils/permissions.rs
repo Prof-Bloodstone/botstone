@@ -19,13 +19,14 @@ pub async fn check_permission(ctx: &Context, msg: &Message, permission: Permissi
                 )
                 .await
         }
-        Permissions::MANAGE_MESSAGES => {
-            msg.channel_id.say(ctx,
-                                       "You can't execute this command because you aren't a moderator (Manage Messages permission)!").await
-        }
-        _ => {
-            msg.channel_id.say(ctx, "You can't execute this command!").await
-        }
+        Permissions::MANAGE_MESSAGES => msg
+            .channel_id
+            .say(
+                ctx,
+                "You can't execute this command because you aren't a moderator (Manage Messages permission)!",
+            )
+            .await,
+        _ => msg.channel_id.say(ctx, "You can't execute this command!").await,
     };
 
     return false;

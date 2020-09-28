@@ -6,4 +6,3 @@ pub fn get_message_url(guild_id: GuildId, channel_id: ChannelId, message_id: Mes
         guild_id.0, channel_id.0, message_id.0
     )
 }
-

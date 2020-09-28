@@ -1,12 +1,13 @@
 use std::error::Error as StdError;
-use std::num::ParseIntError;
 use std::fmt;
+use std::num::ParseIntError;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum Error {
     ParseError(String),
     NumError(ParseIntError),
 }
+
 impl StdError for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -16,9 +17,9 @@ impl fmt::Display for Error {
         }
     }
 }
-impl From<std::num::ParseIntError> for Error {
+
+impl From<ParseIntError> for Error {
     fn from(e: ParseIntError) -> Self {
         Error::NumError(e)
     }
 }
-
