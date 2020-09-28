@@ -16,7 +16,6 @@ pub struct General;
 #[commands(prefix, command)]
 pub struct Config;
 
-
 #[group]
 #[commands(support, help, info)]
 pub struct Support;

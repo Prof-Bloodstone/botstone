@@ -1,10 +1,10 @@
-use serde::{Deserialize};
+use crate::structures::errors::{Error, Error::ParseError};
+use once_cell::sync::Lazy;
+use serde::Deserialize;
+use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter};
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use crate::structures::errors::{Error, Error::ParseError};
-use once_cell::sync::Lazy;
-use serenity::builder::{CreateEmbed, CreateEmbedAuthor};
 
 // TODO: PR to library and drop ASAP
 pub static NAME_TO_COLOUR_MAPPING: Lazy<HashMap<&str, Colour>> = Lazy::new(|| {
@@ -37,7 +37,7 @@ pub static NAME_TO_COLOUR_MAPPING: Lazy<HashMap<&str, Colour>> = Lazy::new(|| {
         "ROHRKATZE_BLUE" => Colour::ROHRKATZE_BLUE,
         "ROSEWATER" => Colour::ROSEWATER,
         "TEAL" => Colour::TEAL,
-    }
+    };
 });
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -58,7 +58,7 @@ struct Embed {
     #[serde(alias = "f")]
     #[serde(alias = "fields")]
     field: Option<EmbedFieldEnum>,
-    footer: Option<String>,
+    footer: Option<EmbedFooterEnum>,
     #[serde(alias = "a")]
     author: Option<EmbedAuthor>,
 }
@@ -83,13 +83,22 @@ impl TryFrom<EmbedColourEnum> for Colour {
                         let decoded = u32::from_str_radix(&string[1..], 16)?;
                         Ok(Colour::from(decoded))
                     } else {
-                        Err(ParseError(format!("String {:?} is not a valid hex color", string)))
+                        Err(ParseError(format!(
+                            "String {:?} is not a valid hex color",
+                            string
+                        )))
                     }
                 } else {
-                    NAME_TO_COLOUR_MAPPING.get(string.as_str()).ok_or(ParseError(format!("String {:?} is neither a hex, not a valid color name.", string))).map(|c| c.clone())
+                    NAME_TO_COLOUR_MAPPING
+                        .get(string.as_str())
+                        .ok_or(ParseError(format!(
+                            "String {:?} is neither a hex, not a valid color name.",
+                            string
+                        )))
+                        .map(|c| c.clone())
                 }
             }
-            EmbedColourEnum::RGB(rgb) => Ok(Colour::from_rgb(rgb.red, rgb.green, rgb.blue))
+            EmbedColourEnum::RGB(rgb) => Ok(Colour::from_rgb(rgb.red, rgb.green, rgb.blue)),
         }
     }
 }
@@ -106,13 +115,57 @@ struct RGBColour {
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
-enum EmbedFieldEnum { Single(EmbedField), Vector(Vec<EmbedField>) }
+enum EmbedFieldEnum {
+    Single(EmbedField),
+    Vector(Vec<EmbedField>),
+}
 #[derive(Deserialize, Debug, PartialEq)]
 struct EmbedField {
     name: String,
     value: String,
     inline: Option<bool>,
 }
+
+#[derive(Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+enum EmbedFooterEnum {
+    TextOnly(String),
+    Complex(EmbedFooter),
+}
+
+
+impl From<EmbedFooterEnum> for EmbedFooter {
+    fn from(ef: EmbedFooterEnum) -> Self {
+        match ef {
+            EmbedFooterEnum::TextOnly(text) => EmbedFooter { text: Some(text), url: None },
+            EmbedFooterEnum::Complex(footer) => footer,
+        }
+    }
+
+}
+
+impl From<EmbedFooterEnum> for CreateEmbedFooter {
+    fn from(ef: EmbedFooterEnum) -> Self {
+        let footer = EmbedFooter::from(ef);
+        CreateEmbedFooter::from(footer)
+    }
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+struct EmbedFooter {
+    text: Option<String>,
+    url: Option<String>,
+}
+
+impl From<EmbedFooter> for CreateEmbedFooter {
+    fn from(ef: EmbedFooter) -> Self {
+        let mut builder = Self::default();
+        ef.text.map(|v| builder.text(v));
+        ef.url.map(|v| builder.icon_url(v));
+        return builder;
+    }
+}
+
 
 #[derive(Deserialize, Debug, PartialEq)]
 struct EmbedAuthor {
@@ -126,21 +179,20 @@ struct EmbedAuthor {
     icon: Option<String>,
 }
 
-
 impl TryFrom<Embed> for CreateEmbed {
     type Error = Error;
 
     fn try_from(value: Embed) -> Result<Self, Self::Error> {
         let mut builder = CreateEmbed::default();
-        value.description.map(|v| builder.description(v));
         match value.colour {
             None => Result::<(), Self::Error>::Ok(()),
             Some(v) => {
                 let colour = Colour::try_from(v)?;
                 builder.colour(colour);
                 Ok(())
-            },
+            }
         }?;
+        value.description.map(|v| builder.description(v));
         value.field.map(|v| {
             let fields = match v {
                 EmbedFieldEnum::Single(field) => vec![field],
@@ -150,8 +202,14 @@ impl TryFrom<Embed> for CreateEmbed {
                 builder.field(field.name, field.value, field.inline.unwrap_or(false));
             }
         });
-        // TODO: Add builder
-        //value.author.map(|v| builder.author(|a| a.));
+        value.footer.map(|v| builder.footer(|f| {
+            f.0 = CreateEmbedFooter::from(v).0;
+            f
+        }));
+        value.author.map(|v| builder.author(|a| {
+            a.0 = CreateEmbedAuthor::from(v).0;
+            a
+        }));
         return Ok(builder);
     }
 }
@@ -169,6 +227,9 @@ impl From<EmbedAuthor> for CreateEmbedAuthor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
+    use proptest::prelude::*;
+    use rstest::rstest;
 
     #[test]
     fn test_content_only_deserialization() {
@@ -204,7 +265,7 @@ mod tests {
                 description: Some("My Description".to_string()),
                 field: None,
                 footer: None,
-                author: None
+                author: None,
             }),
         };
         assert_eq!(expected, deserialized);
@@ -219,7 +280,7 @@ mod tests {
             description: None,
             field: None,
             footer: None,
-            author: None
+            author: None,
         };
         assert_eq!(expected, deserialized);
     }
@@ -252,39 +313,49 @@ mod tests {
             embed: Some(Embed {
                 colour: Some(EmbedColourEnum::String("RED".to_string())),
                 description: Some("Description".to_string()),
-                field: Some(EmbedFieldEnum::Vector(vec![EmbedField{
+                field: Some(EmbedFieldEnum::Vector(vec![EmbedField {
                     name: "Name".to_string(),
                     value: "Value".to_string(),
                     inline: Some(true),
                 }])),
-                footer: Some("Footer".to_string()),
+                footer: Some(EmbedFooterEnum::TextOnly("Footer".to_string())),
                 author: Some(EmbedAuthor {
                     name: "Name".to_string(),
                     link: None,
-                    icon: None
-                })
-            })
+                    icon: None,
+                }),
+            }),
         };
         assert_eq!(expected, deserialized);
     }
 
-    #[test]
-    fn test_invalid_hex() {
-        let hex = "#12345678".to_string();
-        Colour::try_from(EmbedColourEnum::String(hex)).unwrap_err();
+    #[rstest(hex,
+        case::sixteen_to_sixth_power("#1000000"),
+        case::one_to_eight("#12345678"),
+    )]
+    fn test_invalid_hex(hex: &str) {
+        let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
+        assert!(matches!(result, Err(ParseError(_))));
     }
 
-    #[test]
-    fn test_hex_parsing() {
-        let hexes = vec![
-            ("#000000", Colour(0)),
-            ("#000001", Colour(1)),
-            ("#000010", Colour(16)),
-            ("#234099", Colour(2310297)),
-        ];
-        for (hex, expected) in hexes {
-            let c = Colour::try_from(EmbedColourEnum::String(hex.to_string())).unwrap();
-            assert_eq!(expected, c);
+    #[rstest(hex, value,
+        case::zero("#000000", 0),
+        case::one("#000001", 1),
+        case::sixteen("#000010", 16),
+        case::complex("#234099", 2310297),
+    )]
+    fn test_hex_parsing(hex: &str, value: u32) {
+        let c = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
+        assert_eq!(Ok(Colour(value)), c);
+    }
+
+    proptest! {
+        #[test]
+        fn parses_all_valid_hexes(expected in 0u32..(16_u32.pow(6))) {
+            let colour = Colour(expected);
+            let hex = format!("#{}", colour.hex());
+            let result = Colour::try_from(EmbedColourEnum::String(hex));
+            prop_assert_eq!(Ok(colour), result);
         }
     }
 }

@@ -1,7 +1,4 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -19,7 +16,18 @@ pub struct VersionData {
 
 impl fmt::Display for VersionData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} ({}:{}{}, {} build, {} [{}], {})", self.name, self.version, self.branch, self.commit, if self.clean_worktree { "" } else { "*" }, self.build, self.os, self.arch, self.timestamp)
+        write!(
+            f,
+            "{} {} ({}:{}{}, {} build, {} [{}], {})",
+            self.name,
+            self.version,
+            self.branch,
+            self.commit,
+            if self.clean_worktree { "" } else { "*" },
+            self.build,
+            self.os,
+            self.arch,
+            self.timestamp
+        )
     }
 }
-

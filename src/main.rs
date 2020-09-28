@@ -1,10 +1,10 @@
 mod commands;
+mod parsers;
 mod structures;
 mod utils;
-mod parsers;
 mod version_data;
 
-use log::{error, info, warn};
+use tracing::{error, info, warn, debug, instrument};
 use serenity::{
     async_trait,
     framework::{standard::macros::hook, StandardFramework},
@@ -15,16 +15,13 @@ use serenity::{
 use std::{collections::HashSet, env, sync::Arc};
 
 use crate::structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer};
-use crate::structures::{commands::*, context::{
-    PublicData
-}};
+use crate::structures::{commands::*, context::PublicData};
+use crate::version_data::VersionData;
 use dotenv;
 use serenity::model::channel::Message;
 use sqlx::postgres::PgPoolOptions;
 use std::error::Error;
 use tokio::signal::unix::{signal, SignalKind};
-use crate::version_data::VersionData;
-
 
 struct Handler;
 
@@ -72,7 +69,15 @@ async fn dynamic_prefix(ctx: &Context, msg: &Message) -> Option<String> {
     Some(cur_prefix)
 }
 
+#[hook]
+#[instrument] // Not supported on Commands, so need to use it here.
+async fn before(_: &Context, msg: &Message, command_name: &str) -> bool {
+    debug!("Got command '{}' by user '{}'", command_name, msg.author.name);
+    true
+}
+
 #[tokio::main]
+#[instrument]
 async fn main() -> Result<(), Box<dyn Error>> {
     // This will load the environment variables located at `./.env`, relative to CWD
     if let Err(_) = dotenv::dotenv() {
@@ -82,23 +87,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize the logger to use environment variables.
     // In this case, a good default is setting the environment variable
     // `RUST_LOG` to debug`.
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     info!("Booting up...");
     let version_string = include_str!(concat!(env!("OUT_DIR"), "/version.json"));
-    let build_data = serde_json::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
+    let build_data =
+        serde_json::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
     info!("Running {}", build_data);
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));
     let db_url = env::var("DATABASE_URL").expect("Expected database url in the environment");
 
-    let hardcoded_commands = ALL_GROUP.options.sub_groups.iter().flat_map(|x| {
-        x.options.commands
-            .iter()
-            .flat_map(|i| i.options.names.iter().map(ToString::to_string))
-            .collect::<Vec<_>>()
-    }).collect::<Vec<String>>();
-
+    let hardcoded_commands = ALL_GROUP
+        .options
+        .sub_groups
+        .iter()
+        .flat_map(|x| {
+            x.options
+                .commands
+                .iter()
+                .flat_map(|i| i.options.names.iter().map(ToString::to_string))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<String>>();
 
     let pool = PgPoolOptions::new().max_connections(8).connect(&db_url).await?;
 
@@ -121,15 +132,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .group(&GENERAL_GROUP)
         .group(&OWNER_GROUP)
         .group(&CONFIG_GROUP)
-        .group(&SUPPORT_GROUP);
+        .group(&SUPPORT_GROUP)
+        .before(before);
 
     let mut client = Client::new(&token)
         .framework(framework)
         .event_handler(Handler)
         .await
         .expect("Err creating client");
-
-
 
     {
         let mut data = client.data.write().await;

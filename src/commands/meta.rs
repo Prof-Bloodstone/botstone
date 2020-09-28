@@ -1,5 +1,5 @@
 use crate::utils::channel::AsEmoji;
-use log::{debug, error, info};
+use tracing::{debug, error, info};
 use serenity::framework::standard::{macros::command, Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
