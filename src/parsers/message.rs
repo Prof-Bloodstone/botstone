@@ -1,7 +1,7 @@
 use crate::structures::errors::{Error, Error::ParseError};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter};
+use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage};
 use serenity::utils::Colour;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -48,6 +48,23 @@ struct Message {
     embed: Option<Embed>,
 }
 
+impl<'a> TryFrom<Message> for CreateMessage<'a> {
+    type Error = Error;
+
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
+        let mut builder = Self::default();
+        message.content.map(|c| builder.content(c));
+        if let Some(e) = message.embed {
+            let embed = CreateEmbed::try_from(e)?;
+            builder.embed(|e| {
+                e.0 = embed.0;
+                e
+            });
+        }
+        return Ok(builder);
+    }
+}
+
 #[derive(Deserialize, Debug, PartialEq)]
 struct Embed {
     #[serde(alias = "c")]
@@ -62,6 +79,43 @@ struct Embed {
     #[serde(alias = "a")]
     author: Option<EmbedAuthor>,
 }
+
+
+impl TryFrom<Embed> for CreateEmbed {
+    type Error = Error;
+
+    fn try_from(value: Embed) -> Result<Self, Self::Error> {
+        let mut builder = CreateEmbed::default();
+        match value.colour {
+            None => Result::<(), Self::Error>::Ok(()),
+            Some(v) => {
+                let colour = Colour::try_from(v)?;
+                builder.colour(colour);
+                Ok(())
+            }
+        }?;
+        value.description.map(|v| builder.description(v));
+        value.field.map(|v| {
+            let fields = match v {
+                EmbedFieldEnum::Single(field) => vec![field],
+                EmbedFieldEnum::Vector(fields) => fields,
+            };
+            for field in fields {
+                builder.field(field.name, field.value, field.inline.unwrap_or(false));
+            }
+        });
+        value.footer.map(|v| builder.footer(|f| {
+            f.0 = CreateEmbedFooter::from(v).0;
+            f
+        }));
+        value.author.map(|v| builder.author(|a| {
+            a.0 = CreateEmbedAuthor::from(v).0;
+            a
+        }));
+        return Ok(builder);
+    }
+}
+
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -179,41 +233,6 @@ struct EmbedAuthor {
     icon: Option<String>,
 }
 
-impl TryFrom<Embed> for CreateEmbed {
-    type Error = Error;
-
-    fn try_from(value: Embed) -> Result<Self, Self::Error> {
-        let mut builder = CreateEmbed::default();
-        match value.colour {
-            None => Result::<(), Self::Error>::Ok(()),
-            Some(v) => {
-                let colour = Colour::try_from(v)?;
-                builder.colour(colour);
-                Ok(())
-            }
-        }?;
-        value.description.map(|v| builder.description(v));
-        value.field.map(|v| {
-            let fields = match v {
-                EmbedFieldEnum::Single(field) => vec![field],
-                EmbedFieldEnum::Vector(fields) => fields,
-            };
-            for field in fields {
-                builder.field(field.name, field.value, field.inline.unwrap_or(false));
-            }
-        });
-        value.footer.map(|v| builder.footer(|f| {
-            f.0 = CreateEmbedFooter::from(v).0;
-            f
-        }));
-        value.author.map(|v| builder.author(|a| {
-            a.0 = CreateEmbedAuthor::from(v).0;
-            a
-        }));
-        return Ok(builder);
-    }
-}
-
 impl From<EmbedAuthor> for CreateEmbedAuthor {
     fn from(a: EmbedAuthor) -> Self {
         let mut builder = Self::default();
@@ -232,7 +251,7 @@ mod tests {
     use rstest::rstest;
 
     #[test]
-    fn test_content_only_deserialization() {
+    fn content_only_deserialization() {
         let input = r#"{"content": "My Important Message"}"#;
         let deserialized: Message = serde_json::from_str(input).unwrap();
         let expected = Message {
@@ -243,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deserializing_embed_filed() {
+    fn deserializing_embed_filed() {
         let input = r#"{"name": "Title", "value": "My Val"}"#;
         let deserialized: EmbedField = serde_json::from_str(input).unwrap();
         let expected = EmbedField {
@@ -255,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn test_message_with_simple_embed() {
+    fn message_with_simple_embed() {
         let input = r#"{"e": {"d": "My Description"}}"#;
         let deserialized: Message = serde_json::from_str(input).unwrap();
         let expected = Message {
@@ -272,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn test_colour_embed() {
+    fn colour_embed() {
         let input = r#"{"colour": "RED"}"#;
         let deserialized: Embed = serde_json::from_str(input).unwrap();
         let expected = Embed {
@@ -286,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn test_complex_message() {
+    fn complex_message() {
         let input = r#"
             {
                 "content": "Content",
@@ -329,11 +348,47 @@ mod tests {
         assert_eq!(expected, deserialized);
     }
 
+    #[test]
+    fn complex_cast() {
+        let input = Message {
+            content: Some("Content".to_string()),
+            embed: Some(Embed {
+                colour: Some(EmbedColourEnum::String("RED".to_string())),
+                description: Some("Description".to_string()),
+                field: Some(EmbedFieldEnum::Vector(vec![EmbedField {
+                    name: "Name".to_string(),
+                    value: "Value".to_string(),
+                    inline: Some(true),
+                }])),
+                footer: Some(EmbedFooterEnum::TextOnly("Footer".to_string())),
+                author: Some(EmbedAuthor {
+                    name: "Name".to_string(),
+                    link: None,
+                    icon: None,
+                }),
+            }),
+        };
+        let mut expected = CreateMessage::default();
+        expected.content("Content")
+            .embed(|e|
+                e.colour(Colour::RED)
+                    .description("Description")
+                    .field("Name", "Value", true)
+                    .footer(|f| f.text("Footer"))
+                    .author(|a|
+                        a.name("Name")
+                    )
+            );
+        let result = CreateMessage::try_from(input);
+        assert!(matches!(result, Ok(_)));
+        assert_eq!(expected.0, result.unwrap().0); // Only compare HashMap
+    }
+
     #[rstest(hex,
         case::sixteen_to_sixth_power("#1000000"),
         case::one_to_eight("#12345678"),
     )]
-    fn test_invalid_hex(hex: &str) {
+    fn invalid_hex(hex: &str) {
         let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
         assert!(matches!(result, Err(ParseError(_))));
     }
@@ -344,7 +399,7 @@ mod tests {
         case::sixteen("#000010", 16),
         case::complex("#234099", 2310297),
     )]
-    fn test_hex_parsing(hex: &str, value: u32) {
+    fn hex_parsing(hex: &str, value: u32) {
         let c = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
         assert_eq!(Ok(Colour(value)), c);
     }
