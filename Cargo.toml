@@ -35,7 +35,6 @@ cargo-make = "0.32.5"
 pretty_assertions = "0.6.1"
 proptest = "0.10"
 rstest = "0.6.4"
-rusty-hook = "^0.11.2"
 
 [build-dependencies]
 chrono = "0.4.7"
