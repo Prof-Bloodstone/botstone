@@ -24,6 +24,7 @@ use sqlx::postgres::PgPoolOptions;
 use std::error::Error;
 use tokio::signal::unix::{signal, SignalKind};
 use crate::database::queries::GuildInfoTable;
+use serenity::model::id::GuildId;
 
 struct Handler;
 
@@ -40,7 +41,26 @@ impl EventHandler for Handler {
        }
     }*/
 
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
+        let guild_info = {
+            let data = ctx.data.read().await;
+            let guild_info = data.get::<GuildInfoTable>().unwrap().clone();
+            guild_info
+        };
+
+        for guild_id in guilds {
+            let prefix = guild_info.get_prefix(guild_id).await;
+            if prefix.is_none() {
+                info!("Detected new guild while the bot was down: {}", guild_id);
+                match guild_info.add_guild(guild_id).await {
+                    Ok(_) => {},
+                    Err(e) => error!("Issue while adding new guild: {}", e),
+                }
+            }
+        }
+    }
+
+    async fn ready(&self, _ctx: Context, ready: Ready) {
         info!("Connected as {}", ready.user.name);
     }
 
@@ -94,7 +114,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));
     let db_url = env::var("DATABASE_URL").expect("Expected database url in the environment");
-    env::var("POSTGRES_HOST").map(|db_host| debug!("DB HOST: {}", db_host));
     debug!("Will connect to database: {}", db_url);
 
     let hardcoded_commands = ALL_GROUP
