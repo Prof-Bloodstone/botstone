@@ -1,7 +1,6 @@
 use crate::version_data::VersionData;
 use serenity::{
     client::bridge::gateway::ShardManager,
-    model::id::UserId,
     prelude::{Mutex, TypeMapKey},
 };
 use sqlx::PgPool;
@@ -40,3 +39,4 @@ pub struct VersionDataContainer;
 impl TypeMapKey for VersionDataContainer {
     type Value = Arc<VersionData>;
 }
+

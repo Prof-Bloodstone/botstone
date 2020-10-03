@@ -1,4 +1,15 @@
-# putting it here for poor folks who don't use buildkit
 target/
-.git/
+scripts/
+proptest-regressions/
 
+*.md/
+docker-compose.yml
+Dockerfile
+.*ignore
+make.env
+.env
+Makefile.toml
+rustfmt.toml
+
+
+.envrc

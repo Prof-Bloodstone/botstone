@@ -28,15 +28,17 @@ fn main() -> std::io::Result<()> {
         name: env!("CARGO_PKG_NAME").to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         branch: if is_git_info_available {
-            get_branch_name().unwrap_or("NONE".to_string())
+            get_branch_name()
         } else {
-            "NONE".to_string()
-        },
+            None
+        }
+        .unwrap_or("NONE".to_string()),
         commit: if is_git_info_available {
             get_commit_hash()
         } else {
-            "NONE".to_string()
-        },
+            None
+        }
+        .unwrap_or("NONE".to_string()),
         clean_worktree: is_git_info_available && is_working_tree_clean(),
         os: OS.to_string(),
         arch: ARCH.to_string(),
@@ -55,7 +57,7 @@ fn git_cmd<'a>() -> Command {
     return cmd;
 }
 
-fn get_commit_hash() -> String {
+fn get_commit_hash() -> Option<String> {
     let output = git_cmd()
         .arg("log")
         .arg("-1")
@@ -63,9 +65,11 @@ fn get_commit_hash() -> String {
         .output()
         .unwrap();
 
-    assert!(output.status.success());
-
-    String::from_utf8_lossy(&output.stdout).to_string()
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        None
+    }
 }
 
 fn get_branch_name() -> Option<String> {

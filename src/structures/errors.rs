@@ -2,7 +2,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::num::ParseIntError;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     ParseError(String),
     NumError(ParseIntError),

@@ -1,10 +1,10 @@
 mod commands;
+mod database;
 mod parsers;
 mod structures;
 mod utils;
 mod version_data;
 
-use tracing::{error, info, warn, debug, instrument};
 use serenity::{
     async_trait,
     framework::{standard::macros::hook, StandardFramework},
@@ -13,6 +13,7 @@ use serenity::{
     prelude::*,
 };
 use std::{collections::HashSet, env, sync::Arc};
+use tracing::{debug, error, info, instrument, warn};
 
 use crate::structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer};
 use crate::structures::{commands::*, context::PublicData};
@@ -22,6 +23,7 @@ use serenity::model::channel::Message;
 use sqlx::postgres::PgPoolOptions;
 use std::error::Error;
 use tokio::signal::unix::{signal, SignalKind};
+use crate::database::queries::GuildInfoTable;
 
 struct Handler;
 
@@ -54,19 +56,14 @@ impl EventHandler for Handler {
  */
 #[hook]
 async fn dynamic_prefix(ctx: &Context, msg: &Message) -> Option<String> {
-    let (pool, default_prefix) = {
+    let guild_info = {
         let data = ctx.data.read().await;
-        let pool = data.get::<ConnectionPool>().unwrap().clone();
-        let default_prefix = data.get::<PublicData>().unwrap().default_prefix.clone();
-        (pool, default_prefix)
+        let guild_info = data.get::<GuildInfoTable>().unwrap().clone();
+        guild_info
     };
     let guild_id = msg.guild_id.unwrap();
 
-    let cur_prefix = commands::config::get_prefix(&*pool, guild_id, default_prefix)
-        .await
-        .unwrap();
-
-    Some(cur_prefix)
+    guild_info.get_prefix(guild_id).await
 }
 
 #[hook]
@@ -97,6 +94,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));
     let db_url = env::var("DATABASE_URL").expect("Expected database url in the environment");
+    env::var("POSTGRES_HOST").map(|db_host| debug!("DB HOST: {}", db_host));
+    debug!("Will connect to database: {}", db_url);
 
     let hardcoded_commands = ALL_GROUP
         .options
@@ -149,8 +148,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             default_prefix: prefix,
             hardcoded_commands,
         }));
-        data.insert::<ConnectionPool>(Arc::new(pool));
+        data.insert::<ConnectionPool>(Arc::new(pool.clone()));
         data.insert::<VersionDataContainer>(Arc::new(build_data));
+        let guild_info = GuildInfoTable::new(&pool).await?;
+        data.insert::<GuildInfoTable>(Arc::new(guild_info))
     }
 
     // Listen to interrupts
