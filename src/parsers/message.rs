@@ -80,7 +80,6 @@ struct Embed {
     author: Option<EmbedAuthor>,
 }
 
-
 impl TryFrom<Embed> for CreateEmbed {
     type Error = Error;
 
@@ -104,18 +103,21 @@ impl TryFrom<Embed> for CreateEmbed {
                 builder.field(field.name, field.value, field.inline.unwrap_or(false));
             }
         });
-        value.footer.map(|v| builder.footer(|f| {
-            f.0 = CreateEmbedFooter::from(v).0;
-            f
-        }));
-        value.author.map(|v| builder.author(|a| {
-            a.0 = CreateEmbedAuthor::from(v).0;
-            a
-        }));
+        value.footer.map(|v| {
+            builder.footer(|f| {
+                f.0 = CreateEmbedFooter::from(v).0;
+                f
+            })
+        });
+        value.author.map(|v| {
+            builder.author(|a| {
+                a.0 = CreateEmbedAuthor::from(v).0;
+                a
+            })
+        });
         return Ok(builder);
     }
 }
-
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
@@ -187,15 +189,16 @@ enum EmbedFooterEnum {
     Complex(EmbedFooter),
 }
 
-
 impl From<EmbedFooterEnum> for EmbedFooter {
     fn from(ef: EmbedFooterEnum) -> Self {
         match ef {
-            EmbedFooterEnum::TextOnly(text) => EmbedFooter { text: Some(text), url: None },
+            EmbedFooterEnum::TextOnly(text) => EmbedFooter {
+                text: Some(text),
+                url: None,
+            },
             EmbedFooterEnum::Complex(footer) => footer,
         }
     }
-
 }
 
 impl From<EmbedFooterEnum> for CreateEmbedFooter {
@@ -219,7 +222,6 @@ impl From<EmbedFooter> for CreateEmbedFooter {
         return builder;
     }
 }
-
 
 #[derive(Deserialize, Debug, PartialEq)]
 struct EmbedAuthor {
@@ -369,35 +371,35 @@ mod tests {
             }),
         };
         let mut expected = CreateMessage::default();
-        expected.content("Content")
-            .embed(|e|
-                e.colour(Colour::RED)
-                    .description("Description")
-                    .field("Name", "Value", true)
-                    .footer(|f| f.text("Footer"))
-                    .author(|a|
-                        a.name("Name")
-                    )
-            );
+        expected.content("Content").embed(|e| {
+            e.colour(Colour::RED)
+                .description("Description")
+                .field("Name", "Value", true)
+                .footer(|f| f.text("Footer"))
+                .author(|a| a.name("Name"))
+        });
         let result = CreateMessage::try_from(input);
         assert!(matches!(result, Ok(_)));
         assert_eq!(expected.0, result.unwrap().0); // Only compare HashMap
     }
 
-    #[rstest(hex,
+    #[rstest(
+        hex,
         case::sixteen_to_sixth_power("#1000000"),
-        case::one_to_eight("#12345678"),
+        case::one_to_eight("#12345678")
     )]
     fn invalid_hex(hex: &str) {
         let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
         assert!(matches!(result, Err(ParseError(_))));
     }
 
-    #[rstest(hex, value,
+    #[rstest(
+        hex,
+        value,
         case::zero("#000000", 0),
         case::one("#000001", 1),
         case::sixteen("#000010", 16),
-        case::complex("#234099", 2310297),
+        case::complex("#234099", 2310297)
     )]
     fn hex_parsing(hex: &str, value: u32) {
         let c = Colour::try_from(EmbedColourEnum::String(hex.to_string()));

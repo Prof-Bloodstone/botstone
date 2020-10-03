@@ -1,5 +1,32 @@
 {
   "db": "PostgreSQL",
+  "166f0a7b5be7ac646348419d021ed115f7cbd21f00d51a7f9e325aab7d882bbc": {
+    "query": "UPDATE guild_info SET prefix = $1 WHERE guild_id = $2 RETURNING *",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "prefix",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "21306cc2018b0a5568cda7a9ca138690f4b63f8fc1be94d7e4cf7a3976aec712": {
     "query": "SELECT name FROM commands WHERE guild_id = $1",
     "describe": {
@@ -33,23 +60,54 @@
       "nullable": []
     }
   },
-  "6b691922ab0edf9d2c8db1c785936fd20aab4655bfd4769b84bad4526c2aa42a": {
-    "query": "SELECT prefix FROM guild_info WHERE guild_id = $1",
+  "6b936e5627d0849b6eca9b1e1e3fe1e8cd884bb63624ef23b3695e489cc86d9f": {
+    "query": "INSERT INTO guild_info (guild_id, prefix) VALUES ($1, $2) RETURNING *",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
           "name": "prefix",
           "type_info": "Text"
         }
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "Int8",
+          "Text"
         ]
       },
       "nullable": [
-        true
+        false,
+        false
+      ]
+    }
+  },
+  "7c22a56bb94369f3b2f8f56f24af51ebe5729a66e39096169454e3fcf449e5db": {
+    "query": "SELECT * FROM guild_info",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "guild_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "prefix",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
       ]
     }
   },
@@ -62,19 +120,6 @@
           "Int8",
           "Text",
           "Text"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "fa8bb4180f831c6f43c463e96921ee8a8fff8941ce439b4f09ad1555a07eaf80": {
-    "query": "UPDATE guild_info SET prefix = $1 WHERE guild_id = $2",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Int8"
         ]
       },
       "nullable": []

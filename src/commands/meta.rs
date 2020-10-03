@@ -1,8 +1,8 @@
 use crate::utils::channel::AsEmoji;
-use tracing::{debug, error, info};
 use serenity::framework::standard::{macros::command, Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use tracing::{debug, error, info};
 
 #[command]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {

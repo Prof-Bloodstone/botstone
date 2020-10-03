@@ -1,4 +1,5 @@
 use crate::{
+    database::queries::GuildInfoTable,
     structures::context::{CommandNameMap, ConnectionPool},
     utils::defaults::*,
     utils::permissions,
@@ -6,7 +7,6 @@ use crate::{
 use serenity::framework::standard::{macros::command, Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use sqlx::{self, PgPool};
 
 /// Sets the prefix for the server using the first message argument
 #[command]
@@ -16,23 +16,17 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if !permissions::check_permission(ctx, msg, Permissions::MANAGE_MESSAGES).await {
         return Ok(());
     }
-    let pool = {
+    let guild_info = {
         let data = ctx.data.read().await;
-        let pool = data.get::<ConnectionPool>().unwrap().clone();
-        pool
+        let guild_info = data.get::<GuildInfoTable>().unwrap().clone();
+        guild_info
     };
-    let guild_id = msg.guild_id.unwrap().0 as i64;
+    let guild_id = msg.guild_id.unwrap();
     let guild_name = msg.guild(ctx).await.unwrap().name;
 
     let new_prefix = args.single::<String>().unwrap();
 
-    sqlx::query!(
-        "UPDATE guild_info SET prefix = $1 WHERE guild_id = $2",
-        new_prefix,
-        guild_id
-    )
-    .execute(&*pool)
-    .await?;
+    guild_info.set_prefix(guild_id, new_prefix.clone()).await?;
 
     msg.channel_id
         .say(
@@ -41,28 +35,6 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         )
         .await?;
     Ok(())
-}
-
-pub async fn get_prefix(
-    pool: &PgPool,
-    guild_id: GuildId,
-    default_prefix: String,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let mut cur_prefix = default_prefix;
-    let guild_data = sqlx::query!(
-        "SELECT prefix FROM guild_info WHERE guild_id = $1",
-        guild_id.0 as i64
-    )
-    .fetch_optional(pool)
-    .await?;
-
-    if let Some(guild_data) = guild_data {
-        if let Some(prefix) = guild_data.prefix {
-            cur_prefix = prefix;
-        }
-    }
-
-    Ok(cur_prefix)
 }
 
 pub async fn prefix_help(ctx: &Context, channel_id: ChannelId) {

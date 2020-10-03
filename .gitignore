@@ -19,3 +19,4 @@ botstone.iml
 .env
 scripts/
 docs/
+.envrc

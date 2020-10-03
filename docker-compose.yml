@@ -8,8 +8,12 @@ services:
       labels:
         dev.bloodstone.description: "Discord bot"
     restart: "no"
+    environment:
+      POSTGRES_HOST: postgres
     volumes:
       - './.env:/.env:ro'
+    depends_on:
+      - postgres
   postgres:
     container_name: postgres
     image: 'postgres:12.4'

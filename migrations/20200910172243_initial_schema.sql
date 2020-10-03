@@ -1,12 +1,12 @@
 -- Add migration script here
 CREATE TABLE guild_info (
   guild_id bigint PRIMARY KEY,
-  prefix text
+  prefix text NOT NULL
 );
 
 CREATE TABLE commands (
   command_id bigserial PRIMARY KEY,
-  guild_id bigint  NOT NULL,
+  guild_id bigint NOT NULL,
   name text NOT NULL,
   content TEXT NOT NULL,
   CONSTRAINT FK_guild_info FOREIGN KEY (guild_id)

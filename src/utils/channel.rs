@@ -23,7 +23,7 @@ impl AsEmoji for String {
                     Ok(reaction)
                 };
             }
-            _ => Ok(reaction)
+            _ => Ok(reaction),
         });
     }
 }
