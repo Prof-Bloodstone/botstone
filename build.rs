@@ -3,14 +3,16 @@ mod version_data;
 use version_data::VersionData;
 
 use chrono::Utc;
-use std::env::{
-    self,
-    consts::{ARCH, OS},
+use std::{
+    env::{
+        self,
+        consts::{ARCH, OS},
+    },
+    fs::File,
+    io::Write,
+    path::Path,
+    process::Command,
 };
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::process::Command;
 
 fn main() -> std::io::Result<()> {
     let out_dir = env::var("OUT_DIR").unwrap();

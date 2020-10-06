@@ -7,8 +7,10 @@ mod version_data;
 
 use crate::{
     database::queries::GuildInfoTable,
-    structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer},
-    structures::{commands::*, context::PublicData},
+    structures::{
+        commands::*,
+        context::{ConnectionPool, PublicData, ShardManagerContainer, VersionDataContainer},
+    },
     version_data::VersionData,
 };
 use dotenv;

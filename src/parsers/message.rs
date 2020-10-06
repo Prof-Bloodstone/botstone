@@ -1,10 +1,11 @@
 use crate::structures::errors::{Error, Error::ParseError};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
-use serenity::builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage};
-use serenity::utils::Colour;
-use std::collections::HashMap;
-use std::convert::TryFrom;
+use serenity::{
+    builder::{CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateMessage},
+    utils::Colour,
+};
+use std::{collections::HashMap, convert::TryFrom};
 
 // TODO: PR to library and drop ASAP
 pub static NAME_TO_COLOUR_MAPPING: Lazy<HashMap<&str, Colour>> = Lazy::new(|| {
