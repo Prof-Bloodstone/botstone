@@ -1,9 +1,9 @@
-use serenity::model::id::GuildId;
-use serenity::prelude::{RwLock, TypeMapKey};
+use serenity::{
+    model::id::GuildId,
+    prelude::{RwLock, TypeMapKey},
+};
 use sqlx::PgPool;
-use std::collections::HashMap;
-use std::fmt;
-use std::sync::Arc;
+use std::{collections::HashMap, fmt, sync::Arc};
 use tracing::instrument;
 
 #[derive(Clone, Debug)]

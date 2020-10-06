@@ -1,12 +1,13 @@
 use crate::{
     database::queries::GuildInfoTable,
     structures::context::{CommandNameMap, ConnectionPool},
-    utils::defaults::*,
-    utils::permissions,
+    utils::{defaults::*, permissions},
 };
-use serenity::framework::standard::{macros::command, Args, CommandResult};
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+use serenity::{
+    framework::standard::{macros::command, Args, CommandResult},
+    model::prelude::*,
+    prelude::*,
+};
 
 /// Sets the prefix for the server using the first message argument
 #[command]

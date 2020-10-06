@@ -1,11 +1,14 @@
-use crate::commands::config::{command_help, prefix_help};
-use crate::structures::context::VersionDataContainer;
-use crate::utils::defaults::*;
-use serenity::framework::standard::{macros::command, Args, CommandResult};
-use serenity::model::id::ChannelId;
-use serenity::model::prelude::Message;
-use serenity::prelude::Context;
-use serenity::utils::MessageBuilder;
+use crate::{
+    commands::config::{command_help, prefix_help},
+    structures::context::VersionDataContainer,
+    utils::defaults::*,
+};
+use serenity::{
+    framework::standard::{macros::command, Args, CommandResult},
+    model::{id::ChannelId, prelude::Message},
+    prelude::Context,
+    utils::MessageBuilder,
+};
 
 #[command]
 async fn help(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {

@@ -1,5 +1,7 @@
-use serenity::model::channel::{ReactionConversionError, ReactionType};
-use serenity::static_assertions::_core::convert::TryFrom;
+use serenity::{
+    model::channel::{ReactionConversionError, ReactionType},
+    static_assertions::_core::convert::TryFrom,
+};
 use unic_emoji_char::is_emoji;
 
 pub trait AsEmoji {

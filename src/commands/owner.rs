@@ -1,8 +1,10 @@
 use crate::ShardManagerContainer;
-use serenity::framework::standard::{macros::command, Args, CommandResult};
-use serenity::model::prelude::*;
-use serenity::prelude::*;
-use serenity::utils::MessageBuilder;
+use serenity::{
+    framework::standard::{macros::command, Args, CommandResult},
+    model::prelude::*,
+    prelude::*,
+    utils::MessageBuilder,
+};
 
 #[command]
 async fn quit(ctx: &Context, msg: &Message) -> CommandResult {

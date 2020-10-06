@@ -1,5 +1,4 @@
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+use serenity::{model::prelude::*, prelude::*};
 
 pub async fn check_permission(ctx: &Context, msg: &Message, permission: Permissions) -> bool {
     let channel = msg.channel(ctx).await.unwrap().guild().unwrap();
