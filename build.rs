@@ -95,5 +95,5 @@ fn is_working_tree_clean() -> bool {
         .status()
         .unwrap();
 
-    status.success()
+    !status.success()
 }

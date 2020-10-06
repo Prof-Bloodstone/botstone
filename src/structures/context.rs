@@ -39,4 +39,3 @@ pub struct VersionDataContainer;
 impl TypeMapKey for VersionDataContainer {
     type Value = Arc<VersionData>;
 }
-
