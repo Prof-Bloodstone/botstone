@@ -5,26 +5,24 @@ mod structures;
 mod utils;
 mod version_data;
 
+use crate::{
+    database::queries::GuildInfoTable,
+    structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer},
+    structures::{commands::*, context::PublicData},
+    version_data::VersionData,
+};
+use dotenv;
 use serenity::{
     async_trait,
     framework::{standard::macros::hook, StandardFramework},
     http::Http,
-    model::{event::ResumedEvent, gateway::Ready},
+    model::{channel::Message, event::ResumedEvent, gateway::Ready, id::GuildId},
     prelude::*,
 };
-use std::{collections::HashSet, env, sync::Arc};
-use tracing::{debug, error, info, instrument, warn};
-
-use crate::database::queries::GuildInfoTable;
-use crate::structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer};
-use crate::structures::{commands::*, context::PublicData};
-use crate::version_data::VersionData;
-use dotenv;
-use serenity::model::channel::Message;
-use serenity::model::id::GuildId;
 use sqlx::postgres::PgPoolOptions;
-use std::error::Error;
+use std::{collections::HashSet, env, error::Error, sync::Arc};
 use tokio::signal::unix::{signal, SignalKind};
+use tracing::{debug, error, info, instrument, warn};
 
 struct Handler;
 
