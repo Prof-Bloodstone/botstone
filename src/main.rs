@@ -15,16 +15,16 @@ use serenity::{
 use std::{collections::HashSet, env, sync::Arc};
 use tracing::{debug, error, info, instrument, warn};
 
+use crate::database::queries::GuildInfoTable;
 use crate::structures::context::{ConnectionPool, ShardManagerContainer, VersionDataContainer};
 use crate::structures::{commands::*, context::PublicData};
 use crate::version_data::VersionData;
 use dotenv;
 use serenity::model::channel::Message;
+use serenity::model::id::GuildId;
 use sqlx::postgres::PgPoolOptions;
 use std::error::Error;
 use tokio::signal::unix::{signal, SignalKind};
-use crate::database::queries::GuildInfoTable;
-use serenity::model::id::GuildId;
 
 struct Handler;
 
@@ -53,7 +53,7 @@ impl EventHandler for Handler {
             if prefix.is_none() {
                 info!("Detected new guild while the bot was down: {}", guild_id);
                 match guild_info.add_guild(guild_id).await {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => error!("Issue while adding new guild: {}", e),
                 }
             }
