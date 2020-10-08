@@ -356,7 +356,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.3.0-rc.2"
-source = "git+https://github.com/Prof-Bloodstone/serenity?branch=remove_bot_token_from_logs#da289616ef35d5122a80432d5f68617a54876da9"
+source = "git+https://github.com/serenity-rs/serenity?branch=current#5bb8342b018bc60def13f36218fd9ee31ce18c0d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1931,7 +1931,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.9.0-rc.2"
-source = "git+https://github.com/Prof-Bloodstone/serenity?branch=remove_bot_token_from_logs#da289616ef35d5122a80432d5f68617a54876da9"
+source = "git+https://github.com/serenity-rs/serenity?branch=current#5bb8342b018bc60def13f36218fd9ee31ce18c0d"
 dependencies = [
  "async-trait",
  "async-tungstenite",

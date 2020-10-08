@@ -6,7 +6,7 @@ reorder_imports = true
 
 # Unstable
 #blank_lines_lower_bound = 1
-#blank_lines_upper_bound = 1
+blank_lines_upper_bound = 1
 imports_layout = "HorizontalVertical"
 merge_imports = true
 reorder_impl_items = true

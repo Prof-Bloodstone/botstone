@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+#![deny(unsafe_code)]
 mod commands;
 mod database;
 mod parsers;
@@ -116,9 +118,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let db_url = env::var("DATABASE_URL").expect("Expected database url in the environment");
     debug!("Will connect to database: {}", db_url);
 
-    let hardcoded_commands = ALL_GROUP
-        .options
-        .sub_groups
+    let command_groups = ALL_GROUP.options.sub_groups;
+
+    let hardcoded_commands = command_groups
         .iter()
         .flat_map(|x| {
             x.options
@@ -134,31 +136,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let http = Http::new_with_token(&token);
 
     // We will fetch your bot's owners and id
-    let (owners, _bot_id) = match http.get_current_application_info().await {
+    let (owners, bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
             owners.insert(info.owner.id);
-
             (owners, info.id)
         }
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
 
     // Create the framework
-    let framework = StandardFramework::new()
+    let mut framework = StandardFramework::new()
         .configure(|c| c.owners(owners).dynamic_prefix(dynamic_prefix))
-        .group(&GENERAL_GROUP)
-        .group(&OWNER_GROUP)
-        .group(&CONFIG_GROUP)
-        .group(&SUPPORT_GROUP)
         .before(before);
+    for group in command_groups {
+        framework = framework.group(group);
+    }
 
-    let mut client = Client::new(&token)
+    let mut client = Client::builder(&token)
         .framework(framework)
         .event_handler(Handler)
         .await
         .expect("Err creating client");
 
+    let guild_info = GuildInfoTable::new(prefix.clone(), &pool).await?;
     {
         let mut data = client.data.write().await;
         // Init shard manager
@@ -166,10 +167,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         data.insert::<PublicData>(Arc::new(PublicData {
             default_prefix: prefix,
             hardcoded_commands,
+            bot_id,
         }));
         data.insert::<ConnectionPool>(Arc::new(pool.clone()));
         data.insert::<VersionDataContainer>(Arc::new(build_data));
-        let guild_info = GuildInfoTable::new(&pool).await?;
         data.insert::<GuildInfoTable>(Arc::new(guild_info))
     }
 
