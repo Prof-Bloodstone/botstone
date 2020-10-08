@@ -1,6 +1,7 @@
 use crate::version_data::VersionData;
 use serenity::{
     client::bridge::gateway::ShardManager,
+    model::id::UserId,
     prelude::{Mutex, TypeMapKey},
 };
 use sqlx::PgPool;
@@ -28,6 +29,7 @@ impl TypeMapKey for CommandNameMap {
 pub struct PublicData {
     pub default_prefix: String,
     pub hardcoded_commands: Vec<String>,
+    pub bot_id: UserId,
 }
 
 impl TypeMapKey for PublicData {

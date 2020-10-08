@@ -26,14 +26,16 @@ pub type GuildInfoMap = HashMap<GuildId, GuildInfoStruct>;
 
 #[derive(Debug)]
 pub struct GuildInfoTable {
+    default_prefix: String,
     pool: PgPool,
     info: RwLock<GuildInfoMap>,
 }
 
 impl GuildInfoTable {
-    pub async fn new(pool: &PgPool) -> Result<Self, sqlx::Error> {
+    pub async fn new(default_prefix: String, pool: &PgPool) -> Result<Self, sqlx::Error> {
         let map = Self::get_all_guild_info(pool).await?;
         Ok(Self {
+            default_prefix,
             pool: pool.clone(),
             info: RwLock::new(map),
         })
@@ -70,7 +72,7 @@ impl GuildInfoTable {
 
         match data {
             None => {
-                self.write_info(guild_id, prefix).await?;
+                self.write_info(guild_id, &prefix).await?;
             }
             Some(info) => {
                 let mut writer = self.info.write().await;
@@ -85,7 +87,7 @@ impl GuildInfoTable {
     pub async fn write_info(
         &self,
         guild_id: GuildId,
-        prefix: String,
+        prefix: &String,
     ) -> Result<GuildInfoStruct, sqlx::Error> {
         let data = sqlx::query_as!(
             GuildInfoStruct,
@@ -105,7 +107,7 @@ impl GuildInfoTable {
 
     #[instrument]
     pub async fn add_guild(&self, guild_id: GuildId) -> Result<GuildInfoStruct, sqlx::Error> {
-        self.write_info(guild_id, ".".to_string()).await
+        self.write_info(guild_id, &self.default_prefix).await
     }
 }
 
