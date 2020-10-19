@@ -1,23 +1,24 @@
-use std::{error::Error as StdError, fmt, num::ParseIntError};
+use std::num::ParseIntError;
+use thiserror::Error as ThisError;
 
-#[derive(Debug, PartialEq)]
-pub enum Error {
-    ParseError(String),
-    NumError(ParseIntError),
+#[derive(ThisError, Debug)]
+pub enum BotstoneError {
+    #[error("error parsing")]
+    ParseError(#[from] ParseError),
 }
 
-impl StdError for Error {}
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::ParseError(msg) => f.write_str(msg),
-            Error::NumError(inner) => fmt::Display::fmt(inner, f),
-        }
-    }
+#[derive(ThisError, Debug)]
+pub enum ParseError {
+    #[error(transparent)]
+    ColourParseError(#[from] ColourParseError),
 }
 
-impl From<ParseIntError> for Error {
-    fn from(e: ParseIntError) -> Self {
-        Error::NumError(e)
-    }
+#[derive(ThisError, Debug)]
+pub enum ColourParseError {
+    #[error("invalid colour hex length: `{0:?}`")]
+    InvalidColourHexLength(String),
+    #[error("invalid colour hex value: `{0:?}`, caused by: `{1:?}`")]
+    InvalidColourHexValue(String, ParseIntError),
+    #[error("unknown colour name: `{0:?}`")]
+    UnknownColourName(String),
 }
