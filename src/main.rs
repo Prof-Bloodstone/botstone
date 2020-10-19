@@ -18,7 +18,10 @@ use crate::{
 use dotenv;
 use serenity::{
     async_trait,
-    framework::{standard::macros::hook, StandardFramework},
+    framework::{
+        standard::{macros::hook, CommandError},
+        StandardFramework,
+    },
     http::Http,
     model::{channel::Message, event::ResumedEvent, gateway::Ready, id::GuildId},
     prelude::*,
@@ -95,6 +98,14 @@ async fn before(_: &Context, msg: &Message, command_name: &str) -> bool {
     true
 }
 
+#[hook]
+#[instrument]
+async fn after(_: &Context, _: &Message, cmd_name: &str, error: Result<(), CommandError>) {
+    if let Err(why) = error {
+        info!("Error in {}: {:?}", cmd_name, why);
+    }
+}
+
 #[tokio::main]
 #[instrument]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -148,7 +159,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Create the framework
     let mut framework = StandardFramework::new()
         .configure(|c| c.owners(owners).dynamic_prefix(dynamic_prefix))
-        .before(before);
+        .before(before)
+        .after(after);
     for group in command_groups {
         framework = framework.group(group);
     }

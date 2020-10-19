@@ -47,8 +47,9 @@ fn main() -> std::io::Result<()> {
         timestamp: Utc::now().format("%Y-%m-%d %H:%M").to_string(),
     };
 
-    file.write(serde_json::to_string::<VersionData>(&data).unwrap().as_bytes())
-        .unwrap();
+    let serialized_data = serde_json::to_string::<VersionData>(&data).unwrap();
+    println!("Data: {:?}", data);
+    file.write(serialized_data.as_bytes()).unwrap();
 
     Ok(())
 }
@@ -94,8 +95,9 @@ fn is_working_tree_clean() -> bool {
         .arg("diff")
         .arg("--quiet")
         .arg("--exit-code")
+        .arg("HEAD")
         .status()
         .unwrap();
 
-    !status.success()
+    status.success()
 }
