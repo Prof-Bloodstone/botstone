@@ -49,6 +49,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1fd36ffbb1fb7c834eac128ea8d0e310c5aeb635548f9d58861e1308d46e71c"
+
+[[package]]
 name = "arc-swap"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -201,6 +207,7 @@ dependencies = [
 name = "botstone"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cargo-make",
  "chrono 0.4.15",
  "dotenv",
@@ -214,6 +221,7 @@ dependencies = [
  "serde_json",
  "serenity",
  "sqlx",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-futures",

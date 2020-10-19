@@ -1,4 +1,7 @@
-use crate::structures::errors::{Error, Error::ParseError};
+use crate::structures::errors::{
+    ColourParseError::{self, InvalidColourHexLength, InvalidColourHexValue, UnknownColourName},
+    ParseError,
+};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serenity::{
@@ -50,7 +53,7 @@ struct Message {
 }
 
 impl<'a> TryFrom<Message> for CreateMessage<'a> {
-    type Error = Error;
+    type Error = ParseError;
 
     fn try_from(message: Message) -> Result<Self, Self::Error> {
         let mut builder = Self::default();
@@ -82,7 +85,7 @@ struct Embed {
 }
 
 impl TryFrom<Embed> for CreateEmbed {
-    type Error = Error;
+    type Error = ParseError;
 
     fn try_from(value: Embed) -> Result<Self, Self::Error> {
         let mut builder = CreateEmbed::default();
@@ -129,7 +132,7 @@ enum EmbedColourEnum {
 }
 
 impl TryFrom<EmbedColourEnum> for Colour {
-    type Error = Error;
+    type Error = ColourParseError;
 
     fn try_from(embed_enum: EmbedColourEnum) -> Result<Self, Self::Error> {
         match embed_enum {
@@ -137,21 +140,16 @@ impl TryFrom<EmbedColourEnum> for Colour {
             EmbedColourEnum::String(string) => {
                 return if string.starts_with("#") {
                     if string.len() == 7 {
-                        let decoded = u32::from_str_radix(&string[1..], 16)?;
+                        let decoded = u32::from_str_radix(&string[1..], 16)
+                            .map_err(|e| InvalidColourHexValue(string, e))?;
                         Ok(Colour::from(decoded))
                     } else {
-                        Err(ParseError(format!(
-                            "String {:?} is not a valid hex color",
-                            string
-                        )))
+                        Err(InvalidColourHexLength(string))
                     }
                 } else {
                     NAME_TO_COLOUR_MAPPING
                         .get(string.as_str())
-                        .ok_or(ParseError(format!(
-                            "String {:?} is neither a hex, not a valid color name.",
-                            string
-                        )))
+                        .ok_or(UnknownColourName(string))
                         .map(|c| c.clone())
                 }
             }
@@ -386,12 +384,27 @@ mod tests {
 
     #[rstest(
         hex,
+        case::one("#1"),
+        case::ten("#10"),
+        case::hundred("#100"),
         case::sixteen_to_sixth_power("#1000000"),
         case::one_to_eight("#12345678")
     )]
-    fn invalid_hex(hex: &str) {
+    fn colour_hex_wrong_length(hex: &str) {
         let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
-        assert!(matches!(result, Err(ParseError(_))));
+        match result {
+            Err(InvalidColourHexLength(passed_string)) => assert_eq!(hex, passed_string),
+            e => panic!("Expected unknown colour name, got {:#?}", e),
+        };
+    }
+
+    #[rstest(hex, case::all_g("#gggggg"))]
+    fn colour_hex_wrong_value(hex: &str) {
+        let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
+        match result {
+            Err(InvalidColourHexValue(passed_string, _)) => assert_eq!(hex, passed_string),
+            e => panic!("Expected unknown colour name, got {:#?}", e),
+        };
     }
 
     #[rstest(
@@ -400,11 +413,24 @@ mod tests {
         case::zero("#000000", 0),
         case::one("#000001", 1),
         case::sixteen("#000010", 16),
-        case::complex("#234099", 2310297)
+        case::complex("#234099", 2310297),
+        case::a_to_f("#abcdef", 11259375)
     )]
-    fn hex_parsing(hex: &str, value: u32) {
-        let c = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
-        assert_eq!(Ok(Colour(value)), c);
+    fn colour_valid_hex_parsing(hex: &str, value: u32) {
+        let result = Colour::try_from(EmbedColourEnum::String(hex.to_string()));
+        match result {
+            Ok(colour) => assert_eq!(Colour(value), colour),
+            e => panic!("Expected valid colour, got {:#?}", e),
+        };
+    }
+
+    #[rstest(colour, case("abc"))]
+    fn colour_wrong_name(colour: &str) {
+        let result = Colour::try_from(EmbedColourEnum::String(colour.to_string()));
+        match result {
+            Err(UnknownColourName(passed_string)) => assert_eq!(colour.to_string(), passed_string),
+            e => panic!("Expected unknown colour name, got {:#?}", e),
+        };
     }
 
     proptest! {
@@ -413,7 +439,7 @@ mod tests {
             let colour = Colour(expected);
             let hex = format!("#{}", colour.hex());
             let result = Colour::try_from(EmbedColourEnum::String(hex));
-            prop_assert_eq!(Ok(colour), result);
+            prop_assert_eq!(colour, result.unwrap());
         }
     }
 }
