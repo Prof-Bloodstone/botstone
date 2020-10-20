@@ -1,7 +1,7 @@
 use crate::{
     database::queries::GuildInfoTable,
     structures::context::{CommandNameMap, ConnectionPool},
-    utils::{defaults::*, permissions},
+    utils::{permissions},
 };
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
@@ -9,7 +9,7 @@ use serenity::{
     prelude::*,
 };
 
-/// Sets the prefix for the server using the first message argument
+/// Changes prefix in current guild.
 #[command]
 #[only_in("guilds")]
 #[num_args(1)]
@@ -38,23 +38,6 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     Ok(())
 }
 
-pub async fn prefix_help(ctx: &Context, channel_id: ChannelId) {
-    let mut content = String::new();
-    content.push_str("prefix <character(s)>: Sets the server's prefix (Can be one or multiple characters)");
-
-    let _ = channel_id
-        .send_message(ctx, |m| {
-            m.embed(|e| {
-                e.colour(DEFAULT_HELP_EMBED_COLOUR);
-                e.title("Custom Prefix Help");
-                e.description("Description: Commands for custom bot prefixes");
-                e.field("Commands", content, false);
-                e
-            })
-        })
-        .await;
-}
-
 /// Custom commands for your server that output a message
 /// Usage to set: `command set <name> <content to be said>`
 /// Usage to remove: `command remove <name>`
@@ -68,8 +51,9 @@ async fn command(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-// Subcommand to set/update a custom command
+/// set/update a custom command
 #[command]
+#[example = "command set website https://www.example.com"]
 #[required_permissions(Administrator)]
 #[aliases("add")]
 #[min_args(2)]
@@ -94,6 +78,12 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let guild_id = msg.guild_id.unwrap().0 as i64;
 
+    let content = args.rest();
+
+    if content.starts_with("{") {
+        // Assume this is special content, which needs to be parsed
+        // So check if it can be deserialized
+    }
     sqlx::query!(
         "INSERT INTO commands(guild_id, name, content)
             VALUES($1, $2, $3)
@@ -102,7 +92,7 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             SET content = EXCLUDED.content",
         guild_id,
         command_name,
-        args.rest()
+        content
     )
     .execute(&*pool)
     .await?;
@@ -172,24 +162,4 @@ async fn list(ctx: &Context, msg: &Message) -> CommandResult {
         .await?;
 
     Ok(())
-}
-
-pub async fn command_help(ctx: &Context, channel_id: ChannelId) {
-    let mut content = String::new();
-    content
-        .push_str("set <name> <content>: Sets a new custom command, {user} is replaced with a mention \n\n");
-    content.push_str("remove <name>: Removes an existing custom command \n\n");
-    content.push_str("list: Lists all custom commands in the server");
-
-    let _ = channel_id
-        .send_message(ctx, |m| {
-            m.embed(|e| {
-                e.colour(DEFAULT_HELP_EMBED_COLOUR);
-                e.title("Custom Command Help");
-                e.description("Description: Custom command configuration (For administrators only!)");
-                e.field("Commands", content, false);
-                e
-            })
-        })
-        .await;
 }

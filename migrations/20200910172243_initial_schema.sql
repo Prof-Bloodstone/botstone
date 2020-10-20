@@ -9,6 +9,7 @@ CREATE TABLE commands (
   guild_id bigint NOT NULL,
   name text NOT NULL,
   content TEXT NOT NULL,
+  UNIQUE (guild_id, name),
   CONSTRAINT FK_guild_info FOREIGN KEY (guild_id)
     REFERENCES guild_info (guild_id)
     ON DELETE CASCADE

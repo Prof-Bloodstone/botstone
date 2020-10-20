@@ -1,58 +1,16 @@
 use crate::{
-    commands::config::{command_help, prefix_help},
     structures::context::VersionDataContainer,
     utils::defaults::*,
 };
 use serenity::{
-    framework::standard::{macros::command, Args, CommandResult},
-    model::{id::ChannelId, prelude::Message},
+    framework::standard::{macros::command, CommandResult},
+    model::prelude::Message,
     prelude::Context,
     utils::MessageBuilder,
 };
 
 #[command]
-async fn help(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    if args.len() < 1 {
-        default_help_message(ctx, msg.channel_id).await;
-        return Ok(());
-    }
-
-    let subcommand = args.single::<String>()?;
-
-    match subcommand.as_str() {
-        "prefix" => prefix_help(ctx, msg.channel_id).await,
-        "command" => command_help(ctx, msg.channel_id).await,
-        _ => {}
-    }
-
-    Ok(())
-}
-
-async fn default_help_message(ctx: &Context, channel_id: ChannelId) {
-    let categories = vec!["prefix", "command"];
-
-    let _ = channel_id
-        .send_message(ctx, |m| {
-            m.embed(|e| {
-                e.colour(DEFAULT_HELP_EMBED_COLOUR);
-                e.title("BotStone Help");
-                e.description("Help for the BotStone Discord bot");
-                e.field(
-                    "Subcategories",
-                    format!("```\n{}\n```", categories.join("\n")),
-                    false,
-                );
-                e.footer(|f| {
-                    f.text("Use the support command for any further help!");
-                    f
-                });
-                e
-            })
-        })
-        .await;
-}
-
-#[command]
+#[description = "Points where to get support and report issues."]
 async fn support(ctx: &Context, msg: &Message) -> CommandResult {
     let _ = msg
         .channel_id
@@ -71,6 +29,7 @@ async fn support(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[description = "Returns build information about the bot."]
 async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     let version_data = ctx
         .data
