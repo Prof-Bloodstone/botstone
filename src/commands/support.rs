@@ -1,7 +1,4 @@
-use crate::{
-    structures::context::VersionDataContainer,
-    utils::defaults::*,
-};
+use crate::{structures::context::VersionDataContainer, utils::defaults::*};
 use serenity::{
     framework::standard::{macros::command, CommandResult},
     model::prelude::Message,

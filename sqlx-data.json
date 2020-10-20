@@ -27,6 +27,20 @@
       ]
     }
   },
+  "179ad0f2950476956b9bd6fd087cb8385e88e14771da1288b64abac20451958e": {
+    "query": "INSERT INTO commands (guild_id, name, content) VALUES ($1, $2, $3)\n            ON CONFLICT (guild_id, name) DO UPDATE SET content = EXCLUDED.content",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "21306cc2018b0a5568cda7a9ca138690f4b63f8fc1be94d7e4cf7a3976aec712": {
     "query": "SELECT name FROM commands WHERE guild_id = $1",
     "describe": {
@@ -120,6 +134,39 @@
           "Int8",
           "Text",
           "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "9a0202f867997aee89261cfdc4fda0ab2c5029ddc7cf5f57af62c0e39ffbaaa2": {
+    "query": "SELECT content FROM commands WHERE guild_id = $1 AND name = $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "content",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b0d7420a7d8e020377ca68d17f528276a26c85d5d62ae1d33086753200bf73af": {
+    "query": "DELETE FROM guild_info WHERE guild_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
         ]
       },
       "nullable": []

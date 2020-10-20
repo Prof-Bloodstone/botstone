@@ -2,34 +2,27 @@
 #![deny(unsafe_code)]
 mod commands;
 mod database;
+mod event_handling;
 mod parsers;
 mod structures;
 mod utils;
 mod version_data;
-mod event_handling;
 
 use crate::{
-    database::queries::GuildInfoTable,
+    database::queries::{CustomCommands, GuildInfoTable},
+    event_handling::{after, before, dynamic_prefix, unrecognised_command, Handler, MY_HELP},
     structures::{
         commands::*,
         context::{ConnectionPool, PublicData, ShardManagerContainer, VersionDataContainer},
     },
     version_data::VersionData,
-    event_handling::{
-        Handler, before, after, MY_HELP, dynamic_prefix
-    },
 };
 use dotenv;
-use serenity::{
-    framework::StandardFramework,
-    http::Http,
-    prelude::*,
-};
+use serenity::{framework::StandardFramework, http::Http, prelude::*};
 use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashSet, env, error::Error, sync::Arc};
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{debug, error, info, instrument, warn};
-
 
 #[tokio::main]
 #[instrument]
@@ -83,9 +76,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create the framework
     let mut framework = StandardFramework::new()
-        .configure(|c| c.owners(owners).dynamic_prefix(dynamic_prefix).on_mention(Some(bot_id)))
+        .configure(|c| {
+            c.owners(owners)
+                .dynamic_prefix(dynamic_prefix)
+                .on_mention(Some(bot_id))
+        })
         .before(before)
         .after(after)
+        .unrecognised_command(unrecognised_command)
         .help(&MY_HELP);
     for group in command_groups {
         framework = framework.group(group);
@@ -97,19 +95,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Err creating client");
 
-    let guild_info = GuildInfoTable::new(prefix.clone(), &pool).await?;
+    let guild_info = GuildInfoTable::new(prefix.clone(), pool.clone()).await?;
+    let custom_commands = CustomCommands::new(pool.clone());
     {
         let mut data = client.data.write().await;
         // Init shard manager
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
         data.insert::<PublicData>(Arc::new(PublicData {
             default_prefix: prefix,
-            hardcoded_commands,
+            hardcoded_commands: Arc::new(hardcoded_commands),
             bot_id,
         }));
         data.insert::<ConnectionPool>(Arc::new(pool.clone()));
         data.insert::<VersionDataContainer>(Arc::new(build_data));
-        data.insert::<GuildInfoTable>(Arc::new(guild_info))
+        data.insert::<GuildInfoTable>(Arc::new(guild_info));
+        data.insert::<CustomCommands>(Arc::new(custom_commands));
     }
 
     // Listen to interrupts

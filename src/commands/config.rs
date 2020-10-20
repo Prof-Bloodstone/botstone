@@ -1,8 +1,9 @@
 use crate::{
-    database::queries::GuildInfoTable,
-    structures::context::{CommandNameMap, ConnectionPool},
-    utils::{permissions},
+    database::queries::{CustomCommands, GuildInfoTable},
+    structures::context::{ConnectionPool, PublicData},
+    utils::{misc::send_rich_serialized_message, permissions},
 };
+use anyhow::{anyhow, Context as AnyContext};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::prelude::*,
@@ -58,12 +59,19 @@ async fn command(ctx: &Context, msg: &Message) -> CommandResult {
 #[aliases("add")]
 #[min_args(2)]
 async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let command_name = args.single::<String>().unwrap();
-    let (command_names, pool) = {
+    let command_name = args.single::<String>().context("Unable to get first argument")?;
+    let (command_names, custom_commands) = {
         let data = ctx.data.read().await;
-        let command_names = data.get::<CommandNameMap>().unwrap().clone();
-        let pool = data.get::<ConnectionPool>().unwrap().clone();
-        (command_names.clone(), pool)
+        let command_names = data
+            .get::<PublicData>()
+            .context("Can't get public data")?
+            .hardcoded_commands
+            .clone();
+        let custom_commands = data
+            .get::<CustomCommands>()
+            .context("Can't get custom commands")?
+            .clone();
+        (command_names.clone(), custom_commands)
     };
 
     if command_names.contains(&command_name) {
@@ -73,29 +81,22 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 "This command is already hardcoded! Please choose a different name!",
             )
             .await?;
-        return Ok(());
+        Err(anyhow!("Command {} is already hardcoded.", command_name))?;
     }
 
-    let guild_id = msg.guild_id.unwrap().0 as i64;
+    let guild_id = msg.guild_id.with_context(|| format!("Not in guild: {:?}", msg))?;
 
     let content = args.rest();
 
     if content.starts_with("{") {
         // Assume this is special content, which needs to be parsed
         // So check if it can be deserialized
+        send_rich_serialized_message(ctx, msg.channel_id, content).await?;
     }
-    sqlx::query!(
-        "INSERT INTO commands(guild_id, name, content)
-            VALUES($1, $2, $3)
-            ON CONFLICT (guild_id, name)
-            DO UPDATE
-            SET content = EXCLUDED.content",
-        guild_id,
-        command_name,
-        content
-    )
-    .execute(&*pool)
-    .await?;
+
+    custom_commands
+        .set_command(guild_id, command_name.clone(), content.to_string())
+        .await?;
 
     msg.channel_id
         .say(ctx, format!("Command `{}` successfully set!", command_name))
@@ -110,20 +111,19 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[num_args(1)]
 async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let command_name = args.single::<String>().unwrap();
-    let pool = {
+    let custom_commands = {
         let data = ctx.data.read().await;
-        let pool = data.get::<ConnectionPool>().unwrap().clone();
-        pool
+        let custom_commands = data
+            .get::<CustomCommands>()
+            .context("Can't get custom commands")?
+            .clone();
+        custom_commands
     };
-    let guild_id = msg.guild_id.unwrap().0 as i64;
+    let guild_id = msg.guild_id.with_context(|| format!("Not in guild: {:?}", msg))?;
 
-    sqlx::query!(
-        "DELETE FROM commands WHERE guild_id = $1 AND name = $2",
-        guild_id,
-        command_name
-    )
-    .execute(&*pool)
-    .await?;
+    custom_commands
+        .delete_command(guild_id, command_name.to_string())
+        .await?;
 
     msg.channel_id
         .say(ctx, format!("Command {} successfully deleted!", command_name))
@@ -142,6 +142,7 @@ async fn list(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap().0 as i64;
     let mut command_map: Vec<String> = Vec::new();
 
+    // TODO: Port to CustomCommands
     let command_data = sqlx::query!("SELECT name FROM commands WHERE guild_id = $1", guild_id)
         .fetch_all(&*pool)
         .await?;

@@ -20,15 +20,9 @@ impl TypeMapKey for ConnectionPool {
     type Value = Arc<PgPool>;
 }
 
-pub struct CommandNameMap;
-
-impl TypeMapKey for CommandNameMap {
-    type Value = Arc<Vec<String>>;
-}
-
 pub struct PublicData {
     pub default_prefix: String,
-    pub hardcoded_commands: Vec<String>,
+    pub hardcoded_commands: Arc<Vec<String>>,
     pub bot_id: UserId,
 }
 
