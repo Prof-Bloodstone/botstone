@@ -5,6 +5,8 @@ use thiserror::Error as ThisError;
 pub enum BotstoneError {
     #[error("error parsing")]
     ParseError(#[from] ParseError),
+    #[error("database error")]
+    DatabaseError(#[from] DatabaseError),
 }
 
 #[derive(ThisError, Debug)]
@@ -21,4 +23,12 @@ pub enum ColourParseError {
     InvalidColourHexValue(String, ParseIntError),
     #[error("unknown colour name: `{0:?}`")]
     UnknownColourName(String),
+}
+
+#[derive(ThisError, Debug)]
+pub enum DatabaseError {
+    #[error(transparent)]
+    SqlxError(#[from] sqlx::Error),
+    #[error("nothing was deleted")]
+    NothingDeleted,
 }

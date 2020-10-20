@@ -1,9 +1,14 @@
+use crate::structures::errors::DatabaseError;
 use serenity::{
     model::id::GuildId,
     prelude::{RwLock, TypeMapKey},
 };
-use sqlx::PgPool;
-use std::{collections::HashMap, fmt, sync::Arc};
+use sqlx::{Done, PgPool};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    sync::Arc,
+};
 use tracing::instrument;
 
 #[derive(Clone, Debug)]
@@ -32,11 +37,11 @@ pub struct GuildInfoTable {
 }
 
 impl GuildInfoTable {
-    pub async fn new(default_prefix: String, pool: &PgPool) -> Result<Self, sqlx::Error> {
-        let map = Self::get_all_guild_info(pool).await?;
+    pub async fn new(default_prefix: String, pool: PgPool) -> Result<Self, sqlx::Error> {
+        let map = Self::get_all_guild_info(&pool).await?;
         Ok(Self {
             default_prefix,
-            pool: pool.clone(),
+            pool,
             info: RwLock::new(map),
         })
     }
@@ -109,8 +114,84 @@ impl GuildInfoTable {
     pub async fn add_guild(&self, guild_id: GuildId) -> Result<GuildInfoStruct, sqlx::Error> {
         self.write_info(guild_id, &self.default_prefix).await
     }
+
+    pub async fn get_guilds(&self) -> HashSet<GuildId> {
+        self.info.read().await.keys().cloned().collect()
+    }
+
+    #[instrument]
+    pub async fn remove_guild(&self, guild_id: GuildId) -> Result<(), DatabaseError> {
+        let result = sqlx::query!("DELETE FROM guild_info WHERE guild_id = $1", i64::from(guild_id))
+            .execute(&self.pool)
+            .await?;
+        if result.rows_affected() == 0 {
+            return Err(DatabaseError::NothingDeleted);
+        }
+        let mut writer = self.info.write().await;
+        writer.remove(&guild_id);
+        Ok(())
+    }
 }
 
 impl TypeMapKey for GuildInfoTable {
+    type Value = Arc<Self>;
+}
+
+pub struct CustomCommands {
+    pool: PgPool,
+}
+
+impl CustomCommands {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn set_command(
+        &self,
+        guild_id: GuildId,
+        name: String,
+        content: String,
+    ) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "INSERT INTO commands (guild_id, name, content) VALUES ($1, $2, $3)
+            ON CONFLICT (guild_id, name) DO UPDATE SET content = EXCLUDED.content",
+            i64::from(guild_id),
+            name,
+            content
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn get_command(
+        &self,
+        guild_id: GuildId,
+        name: String,
+    ) -> Result<Option<String>, DatabaseError> {
+        let returned = sqlx::query!(
+            "SELECT content FROM commands WHERE guild_id = $1 AND name = $2",
+            i64::from(guild_id),
+            name
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(returned.map(|value| value.content))
+    }
+
+    pub async fn delete_command(&self, guild_id: GuildId, name: String) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "DELETE FROM commands WHERE guild_id = $1 AND name = $2",
+            i64::from(guild_id),
+            name
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+}
+
+impl TypeMapKey for CustomCommands {
     type Value = Arc<Self>;
 }

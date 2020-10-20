@@ -45,7 +45,7 @@ pub static NAME_TO_COLOUR_MAPPING: Lazy<HashMap<&str, Colour>> = Lazy::new(|| {
 });
 
 #[derive(Deserialize, Debug, PartialEq)]
-struct Message {
+pub struct Message {
     #[serde(alias = "c")]
     content: Option<String>,
     #[serde(alias = "e")]
@@ -70,7 +70,7 @@ impl<'a> TryFrom<Message> for CreateMessage<'a> {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
-struct Embed {
+pub struct Embed {
     #[serde(alias = "c")]
     #[serde(alias = "color")]
     colour: Option<EmbedColourEnum>,
@@ -348,7 +348,10 @@ mod tests {
         };
         match deserialized {
             Ok(content) => assert_eq!(expected, content),
-            e => panic!("Expected to succesfully deserialize content, got {:#?} instead.", e),
+            e => panic!(
+                "Expected to succesfully deserialize content, got {:#?} instead.",
+                e
+            ),
         };
     }
 
