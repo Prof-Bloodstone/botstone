@@ -327,7 +327,7 @@ mod tests {
                 }
             }
         "#;
-        let deserialized: Message = serde_json::from_str(input).unwrap();
+        let deserialized = serde_json::from_str::<Message>(input);
         let expected = Message {
             content: Some("Content".to_string()),
             embed: Some(Embed {
@@ -346,7 +346,10 @@ mod tests {
                 }),
             }),
         };
-        assert_eq!(expected, deserialized);
+        match deserialized {
+            Ok(content) => assert_eq!(expected, content),
+            e => panic!("Expected to succesfully deserialize content, got {:#?} instead.", e),
+        };
     }
 
     #[test]

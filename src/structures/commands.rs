@@ -17,7 +17,7 @@ pub struct General;
 pub struct Config;
 
 #[group]
-#[commands(support, help, info)]
+#[commands(support, info)]
 pub struct Support;
 
 #[group]

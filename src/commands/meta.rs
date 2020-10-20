@@ -9,6 +9,7 @@ use serenity::{
 use anyhow::anyhow;
 use tracing::{debug, error, info};
 
+// Based on implementation by @Flat at https://github.com/Flat/Lupusregina-/blob/0abda1835625f1e4748cc2a9e89fbaf938877990/src/commands/general.rs#L201
 #[command]
 #[description = "Responds with the current latency to Discord."]
 async fn ping(context: &Context, msg: &Message) -> CommandResult {
@@ -32,7 +33,7 @@ async fn ping(context: &Context, msg: &Message) -> CommandResult {
         .await
         .get(&ShardId(context.shard_id))
         .ok_or_else(|| anyhow!("Failed to get Shard."))?
-        .latency
+        .latency // TODO: Getting latency fails for a minute after boot - add retries?
         .ok_or_else(|| anyhow!("Failed to get latency from shard."))?
         .as_millis();
     let msg_content = msg.content.clone();
