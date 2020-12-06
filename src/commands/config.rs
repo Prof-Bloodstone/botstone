@@ -1,6 +1,6 @@
 use crate::{
     database::queries::{CustomCommands, GuildInfoTable},
-    structures::context::{ConnectionPool, PublicData},
+    structures::context::PublicData,
     utils::{misc::send_rich_serialized_message, permissions},
 };
 use anyhow::{anyhow, Context as AnyContext};
@@ -43,6 +43,7 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 /// Usage to set: `command set <name> <content to be said>`
 /// Usage to remove: `command remove <name>`
 #[command]
+#[only_in("guilds")]
 #[sub_commands(set, remove, list)]
 async fn command(ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id
@@ -53,8 +54,8 @@ async fn command(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 /// set/update a custom command
+/// command set website https://www.example.com
 #[command]
-#[example = "command set website https://www.example.com"]
 #[required_permissions(Administrator)]
 #[aliases("add")]
 #[min_args(2)]
@@ -134,28 +135,22 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
 #[command]
 async fn list(ctx: &Context, msg: &Message) -> CommandResult {
-    let pool = {
+    let custom_commands = {
         let data = ctx.data.read().await;
-        let pool = data.get::<ConnectionPool>().unwrap().clone();
-        pool
+        let custom_commands = data
+            .get::<CustomCommands>()
+            .context("Can't get custom commands")?
+            .clone();
+        custom_commands
     };
-    let guild_id = msg.guild_id.unwrap().0 as i64;
-    let mut command_map: Vec<String> = Vec::new();
-
-    // TODO: Port to CustomCommands
-    let command_data = sqlx::query!("SELECT name FROM commands WHERE guild_id = $1", guild_id)
-        .fetch_all(&*pool)
-        .await?;
-
-    for i in command_data {
-        command_map.push(i.name);
-    }
+    let guild_id = msg.guild_id.with_context(|| format!("Not in guild: {:?}", msg))?;
+    let commands = custom_commands.get_command_names(guild_id).await?;
 
     msg.channel_id
         .send_message(ctx, |m| {
             m.embed(|e| {
                 e.title("Custom commands");
-                e.description(format!("```{} \n```", command_map.join(" \n")))
+                e.description(format!("```{} \n```", commands.join(" \n")))
             });
 
             m

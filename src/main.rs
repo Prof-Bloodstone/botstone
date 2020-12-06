@@ -39,8 +39,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     info!("Booting up...");
     let version_string = include_str!(concat!(env!("OUT_DIR"), "/version.json"));
-    let build_data =
-        json5::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
+    let build_data = json5::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
     info!("Running {}", build_data);
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));

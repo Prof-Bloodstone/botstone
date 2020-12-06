@@ -180,6 +180,19 @@ impl CustomCommands {
         Ok(returned.map(|value| value.content))
     }
 
+    pub async fn get_command_names(&self, guild_id: GuildId) -> Result<Vec<String>, DatabaseError> {
+        let names = sqlx::query!(
+            "SELECT name FROM commands WHERE guild_id = $1",
+            i64::from(guild_id)
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|value| value.name)
+        .collect::<Vec<String>>();
+        Ok(names)
+    }
+
     pub async fn delete_command(&self, guild_id: GuildId, name: String) -> Result<(), DatabaseError> {
         sqlx::query!(
             "DELETE FROM commands WHERE guild_id = $1 AND name = $2",
