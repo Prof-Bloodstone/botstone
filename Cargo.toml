@@ -24,21 +24,20 @@ tracing-subscriber = "0.2"
 unic-emoji-char = "0.9"
 
 [dependencies.serenity]
-git = "https://github.com/serenity-rs/serenity"
-branch = "current"
+version = "0.9"
 default-features = true
 features = ["collector", "rustls_backend"]
 
 [dependencies.sqlx]
-version = "0.4.0-beta.1"
+version = "0.4"
 default-features = false
-features = ["runtime-tokio", "macros", "postgres", "migrate", "offline"]
+features = ["runtime-tokio-rustls", "macros", "postgres", "migrate", "offline"]
 
 [dev-dependencies]
-cargo-make = "0.32.5"
-pretty_assertions = "0.6.1"
+cargo-make = "0.32"
+pretty_assertions = "0.6"
 proptest = "0.10"
-rstest = "0.6.4"
+rstest = "0.6"
 
 [build-dependencies]
 chrono = "0.4"
