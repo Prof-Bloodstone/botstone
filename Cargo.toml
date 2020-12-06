@@ -24,7 +24,8 @@ tracing-subscriber = "0.2"
 unic-emoji-char = "0.9"
 
 [dependencies.serenity]
-version = "0.9"
+git = "https://github.com/serenity-rs/serenity"
+branch = "current"
 default-features = true
 features = ["collector", "rustls_backend"]
 
