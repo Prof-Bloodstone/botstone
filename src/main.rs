@@ -19,7 +19,7 @@ use crate::{
 };
 use dotenv;
 use serenity::{framework::StandardFramework, http::Http, prelude::*};
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{self, postgres::PgPoolOptions};
 use std::{collections::HashSet, env, error::Error, sync::Arc};
 use tokio::signal::unix::{signal, SignalKind};
 use tracing::{debug, error, info, instrument, warn};
@@ -45,7 +45,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));
     let db_url = env::var("DATABASE_URL").expect("Expected database url in the environment");
-    debug!("Will connect to database: {}", db_url);
 
     let command_groups = ALL_GROUP.options.sub_groups;
 
@@ -61,6 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect::<Vec<String>>();
 
     let pool = PgPoolOptions::new().max_connections(8).connect(&db_url).await?;
+    sqlx::migrate!().run(&pool).await?;
 
     let http = Http::new_with_token(&token);
 
