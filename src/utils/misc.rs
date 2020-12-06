@@ -20,7 +20,7 @@ pub async fn send_rich_serialized_message(
     channel_id: ChannelId,
     serialized_message: &str,
 ) -> CommandResult {
-    let deserialize_result = serde_json::from_str::<Message>(serialized_message);
+    let deserialize_result = json5::from_str::<Message>(serialized_message);
     return match deserialize_result {
         Err(e) => {
             let error_msg = format!("Unable to deserialize rich response. The error was: {:#?}", e);
