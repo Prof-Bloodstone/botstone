@@ -22,7 +22,7 @@ use serenity::{framework::StandardFramework, http::Http, prelude::*};
 use sqlx::{self, postgres::PgPoolOptions};
 use std::{collections::HashSet, env, error::Error, sync::Arc};
 use tokio::signal::unix::{signal, SignalKind};
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 #[tokio::main]
 #[instrument]
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("Booting up...");
     let version_string = include_str!(concat!(env!("OUT_DIR"), "/version.json"));
     let build_data =
-        serde_json::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
+        json5::from_str::<VersionData>(version_string).expect("Unable to retrieve VersionData");
     info!("Running {}", build_data);
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let prefix = env::var("COMMAND_PREFIX").unwrap_or(String::from("."));

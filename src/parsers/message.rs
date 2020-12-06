@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn content_only_deserialization() {
         let input = r#"{"content": "My Important Message"}"#;
-        let deserialized: Message = serde_json::from_str(input).unwrap();
+        let deserialized: Message = json5::from_str(input).unwrap();
         let expected = Message {
             content: Some("My Important Message".to_string()),
             embed: None,
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn deserializing_embed_filed() {
         let input = r#"{"name": "Title", "value": "My Val"}"#;
-        let deserialized: EmbedField = serde_json::from_str(input).unwrap();
+        let deserialized: EmbedField = json5::from_str(input).unwrap();
         let expected = EmbedField {
             name: "Title".to_string(),
             value: "My Val".to_string(),
@@ -277,7 +277,7 @@ mod tests {
     #[test]
     fn message_with_simple_embed() {
         let input = r#"{"e": {"d": "My Description"}}"#;
-        let deserialized: Message = serde_json::from_str(input).unwrap();
+        let deserialized: Message = json5::from_str(input).unwrap();
         let expected = Message {
             content: None,
             embed: Some(Embed {
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn colour_embed() {
         let input = r#"{"colour": "RED"}"#;
-        let deserialized: Embed = serde_json::from_str(input).unwrap();
+        let deserialized: Embed = json5::from_str(input).unwrap();
         let expected = Embed {
             colour: Some(EmbedColourEnum::String("RED".to_string())),
             description: None,
@@ -327,7 +327,7 @@ mod tests {
                 }
             }
         "#;
-        let deserialized = serde_json::from_str::<Message>(input);
+        let deserialized = json5::from_str::<Message>(input);
         let expected = Message {
             content: Some("Content".to_string()),
             embed: Some(Embed {
