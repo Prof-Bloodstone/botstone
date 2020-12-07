@@ -150,7 +150,7 @@ async fn list(ctx: &Context, msg: &Message) -> CommandResult {
         .send_message(ctx, |m| {
             m.embed(|e| {
                 e.title("Custom commands");
-                e.description(format!("```{} \n```", commands.join(" \n")))
+                e.description(format!("```\n{}\n```", commands.join("\n")))
             });
 
             m
