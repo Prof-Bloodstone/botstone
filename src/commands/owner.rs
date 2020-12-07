@@ -21,6 +21,7 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
 #[command]
 async fn _test(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let mut builder = MessageBuilder::new();

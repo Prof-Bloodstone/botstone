@@ -44,7 +44,7 @@ async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 /// Usage to remove: `command remove <name>`
 #[command]
 #[only_in("guilds")]
-#[sub_commands(set, remove, list)]
+#[sub_commands(command_set, command_remove, command_list)]
 async fn command(ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id
         .say(ctx, "Please use one of the subcommands! (set, remove, list)")
@@ -53,13 +53,22 @@ async fn command(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-/// set/update a custom command
-/// command set website https://www.example.com
-#[command]
+/// Set or update a custom command
+/// Example: `command set website https://www.example.com`
+/// You can also define more complex messages using json5
+/// Example:
+/// ```
+/// .command set website { embed: {
+///   colour: "RED",
+///   description: "Visit us at https://www.example.com \nHope to see you there!",
+///   footer: "Created with <3"
+/// } }
+/// ```
+#[command("set")]
 #[required_permissions(Administrator)]
 #[aliases("add")]
 #[min_args(2)]
-async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+async fn command_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let command_name = args.single::<String>().context("Unable to get first argument")?;
     let (command_names, custom_commands) = {
         let data = ctx.data.read().await;
@@ -93,6 +102,8 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         // Assume this is special content, which needs to be parsed
         // So check if it can be deserialized
         send_rich_serialized_message(ctx, msg.channel_id, content).await?;
+    } else {
+        msg.channel_id.send_message(ctx, |msg| msg.content(content)).await?;
     }
 
     custom_commands
@@ -107,10 +118,11 @@ async fn set(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 }
 
 // Subcommand used to remove a custom command
-#[command]
+#[command("remove")]
 #[required_permissions(Administrator)]
+#[aliases("delete", "del")]
 #[num_args(1)]
-async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+async fn command_remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let command_name = args.single::<String>().unwrap();
     let custom_commands = {
         let data = ctx.data.read().await;
@@ -133,8 +145,8 @@ async fn remove(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     Ok(())
 }
 
-#[command]
-async fn list(ctx: &Context, msg: &Message) -> CommandResult {
+#[command("list")]
+async fn command_list(ctx: &Context, msg: &Message) -> CommandResult {
     let custom_commands = {
         let data = ctx.data.read().await;
         let custom_commands = data
@@ -150,7 +162,8 @@ async fn list(ctx: &Context, msg: &Message) -> CommandResult {
         .send_message(ctx, |m| {
             m.embed(|e| {
                 e.title("Custom commands");
-                e.description(format!("```\n{}\n```", commands.join("\n")))
+                // Using `fix` to color it light yellow
+                e.description(format!("```fix\n{}\n```", commands.join("\n")))
             });
 
             m
