@@ -1,11 +1,11 @@
-use crate::commands::{config::*, meta::*, owner::*, support::*};
+use crate::commands::{admin::*, config::*, meta::*, owner::*, support::*};
 use serenity::framework::standard::macros::group;
 
 // All command groups
 // Doesn't currently work as hoped for - see conversation from serenity discord:
 // https://discordapp.com/channels/381880193251409931/381912587505500160/754058417420632236
 #[group]
-#[sub_groups(General, Config, Support, Owner)]
+#[sub_groups(General, Config, Support, Owner, Admin)]
 pub struct All;
 
 #[group]
@@ -15,6 +15,10 @@ pub struct General;
 #[group]
 #[commands(prefix, command)]
 pub struct Config;
+
+#[group]
+#[commands(message)]
+pub struct Admin;
 
 #[group]
 #[commands(support, info)]

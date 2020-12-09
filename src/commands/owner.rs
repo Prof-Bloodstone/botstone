@@ -31,5 +31,10 @@ async fn _test(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
     builder.push_line("All args:").push(args.message());
     msg.channel_id.say(&ctx.http, builder.build()).await?;
+    msg.channel_id
+        .send_message(ctx, |msg| {
+            msg.reactions(vec![ReactionType::Unicode(":left_arrow:".to_string())].into_iter())
+        })
+        .await?;
     Ok(())
 }
