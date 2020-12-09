@@ -1,4 +1,4 @@
-use crate::parsers::message::Message;
+use crate::{parsers::message::Message, structures::errors::*};
 use serenity::{
     builder::CreateMessage,
     framework::standard::CommandResult,
@@ -6,7 +6,6 @@ use serenity::{
     prelude::*,
 };
 use std::convert::TryFrom;
-use tracing::warn;
 
 pub fn get_message_url(guild_id: GuildId, channel_id: ChannelId, message_id: MessageId) -> String {
     format!(
@@ -20,33 +19,18 @@ pub async fn send_rich_serialized_message(
     channel_id: ChannelId,
     serialized_message: &str,
 ) -> CommandResult {
-    let deserialize_result = json5::from_str::<Message>(serialized_message);
-    return match deserialize_result {
-        Err(e) => {
-            let error_msg = format!("Unable to deserialize rich response. The error was: {:#?}", e);
-            warn!("{}. The content was `{:?}`", error_msg, serialized_message);
-            channel_id.say(ctx, error_msg).await?;
-            Ok(())
-        }
-        Ok(deserialized_msg) => {
-            let result = CreateMessage::try_from(deserialized_msg);
-            match result {
-                Ok(cm) => {
-                    channel_id
-                        .send_message(ctx, |m| {
-                            m.0 = cm.0;
-                            m
-                        })
-                        .await?;
-                    Ok(())
-                }
-                Err(e) => {
-                    let error_msg = format!("Unable to create message. The error was: {:#?}", e);
-                    warn!("{}. The content was `{:?}`", error_msg, serialized_message);
-                    channel_id.say(ctx, error_msg).await?;
-                    Ok(())
-                }
-            }
-        }
-    };
+    let cm = deserialize_rich_message(serialized_message)?;
+    channel_id
+        .send_message(ctx, |m| {
+            m.0 = cm.0;
+            m
+        })
+        .await?;
+    Ok(())
+}
+
+pub fn deserialize_rich_message(serialized_message: &str) -> Result<CreateMessage<'_>, ParseError> {
+    let deserialized_message =
+        json5::from_str::<Message>(serialized_message).map_err(|err| ParseError::InvalidJson(err))?;
+    CreateMessage::try_from(deserialized_message)
 }

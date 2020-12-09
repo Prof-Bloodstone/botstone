@@ -1,3 +1,4 @@
+use json5::Error as Json5Error;
 use std::num::ParseIntError;
 use thiserror::Error as ThisError;
 
@@ -13,6 +14,10 @@ pub enum BotstoneError {
 pub enum ParseError {
     #[error(transparent)]
     ColourParseError(#[from] ColourParseError),
+    #[error("invalid number `{0:?}`, cause by `{1:?}`")]
+    InvalidNumber(String, ParseIntError),
+    #[error("invalid json `{0:?}`")]
+    InvalidJson(Json5Error),
 }
 
 #[derive(ThisError, Debug)]

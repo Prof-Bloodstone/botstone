@@ -140,6 +140,10 @@ pub async fn after(ctx: &Context, msg: &Message, cmd_name: &str, error: Result<(
             why
         );
         let _ = msg.react(ctx, '\u{274C}').await;
+        let _ = msg
+            .channel_id
+            .send_message(ctx, |m| m.content(format!("{}", why)))
+            .await;
     }
 }
 

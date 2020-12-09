@@ -103,7 +103,9 @@ async fn command_set(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         // So check if it can be deserialized
         send_rich_serialized_message(ctx, msg.channel_id, content).await?;
     } else {
-        msg.channel_id.send_message(ctx, |msg| msg.content(content)).await?;
+        msg.channel_id
+            .send_message(ctx, |msg| msg.content(content))
+            .await?;
     }
 
     custom_commands
