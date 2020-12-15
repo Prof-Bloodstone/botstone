@@ -1,5 +1,10 @@
 use json5::Error as Json5Error;
-use std::num::ParseIntError;
+use serenity::Error as SerenityError;
+use std::{
+    error::Error,
+    marker::{Send, Sync},
+    num::ParseIntError,
+};
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
@@ -8,6 +13,12 @@ pub enum BotstoneError {
     ParseError(#[from] ParseError),
     #[error("database error")]
     DatabaseError(#[from] DatabaseError),
+    #[error("serenity error")]
+    SerenityError(#[from] SerenityError),
+    #[error("other error: {0}")]
+    Other(String),
+    #[error("impossible error: {0}")]
+    ImpossibleError(#[from] Box<dyn Error + Send + Sync>),
 }
 
 #[derive(ThisError, Debug)]

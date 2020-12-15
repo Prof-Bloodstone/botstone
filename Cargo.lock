@@ -242,7 +242,10 @@ dependencies = [
  "serde",
  "serde_json",
  "serenity",
+ "serenity_utils",
  "sqlx",
+ "strum",
+ "strum_macros",
  "thiserror",
  "tokio",
  "tracing",
@@ -391,7 +394,7 @@ dependencies = [
 [[package]]
 name = "command_attr"
 version = "0.3.1"
-source = "git+https://github.com/serenity-rs/serenity?branch=current#fb1f0bfdcefada4a08863d5e389df44737a86b12"
+source = "git+https://github.com/serenity-rs/serenity?branch=current#20043d485b1ae56d68c772071891ed8af6a59fcb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2191,7 +2194,7 @@ dependencies = [
 [[package]]
 name = "serenity"
 version = "0.9.2"
-source = "git+https://github.com/serenity-rs/serenity?branch=current#fb1f0bfdcefada4a08863d5e389df44737a86b12"
+source = "git+https://github.com/serenity-rs/serenity?branch=current#20043d485b1ae56d68c772071891ed8af6a59fcb"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -2213,6 +2216,16 @@ dependencies = [
  "typemap_rev",
  "url",
  "uwl",
+]
+
+[[package]]
+name = "serenity_utils"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c42a33c65656e1780873c17e6e004e0071bfe338fd334bc7f9408c3f5e076dc"
+dependencies = [
+ "serenity",
+ "tokio",
 ]
 
 [[package]]
@@ -2435,6 +2448,24 @@ name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
+
+[[package]]
+name = "strum"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7318c509b5ba57f18533982607f24070a55d353e90d4cae30c467cdb2ad5ac5c"
+
+[[package]]
+name = "strum_macros"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee8bc6b87a5112aeeab1f4a9f7ab634fe6cbefc4850006df31267f4cfb9e3149"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "subtle"

@@ -4,6 +4,7 @@ use crate::{
     utils::{
         misc::{deserialize_rich_message, send_rich_serialized_message},
         permissions,
+        prompts,
     },
 };
 use anyhow::Context as AnyContext;
@@ -42,20 +43,31 @@ async fn message(ctx: &Context, msg: &Message) -> CommandResult {
 #[command("send")]
 #[required_permissions(Administrator)]
 #[aliases("new")]
-#[min_args(2)]
-async fn message_send(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
+#[min_args(1)]
+async fn message_send(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let channel_mention = args.single::<String>().context("Unable to get first argument")?;
-    let content = args.rest();
     let channel_number = parse_channel(channel_mention.clone())
         .with_context(|| format!("Not a valid channel mention: {:?}", channel_mention))?;
     let channel = ChannelId(channel_number);
 
-    if content.starts_with("{") {
-        // Assume this is special content, which needs to be parsed
-        send_rich_serialized_message(ctx, channel, content).await?;
+    let rich_message = if args.is_empty() {
+        prompts::get_rich_message(ctx, msg.channel_id, &msg.author).await?
     } else {
-        channel.send_message(ctx, |msg| msg.content(content)).await?;
-    }
+        let content = args.rest();
+        if content.starts_with("{") {
+            // Assume this is special content, which needs to be parsed
+            deserialize_rich_message(content)?
+        } else {
+            let mut message = CreateMessage::default();
+            message.content(content).to_owned()
+        }
+    };
+    channel
+        .send_message(ctx, |msg| {
+            msg.0 = rich_message.0;
+            msg
+        })
+        .await?;
     Ok(())
 }
 
@@ -67,7 +79,7 @@ async fn message_send(ctx: &Context, _msg: &Message, mut args: Args) -> CommandR
 #[command("edit")]
 #[required_permissions(Administrator)]
 #[aliases("update")]
-#[min_args(3)]
+#[min_args(2)]
 async fn message_edit(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
     let channel_mention = args.single::<String>().context("Unable to get first argument")?;
     let message_id_str = args.single::<String>().context("Unable to get second argument")?;
