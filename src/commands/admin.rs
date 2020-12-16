@@ -1,12 +1,4 @@
-use crate::{
-    database::queries::{CustomCommands, GuildInfoTable},
-    structures::context::PublicData,
-    utils::{
-        misc::{deserialize_rich_message, send_rich_serialized_message},
-        permissions,
-        prompts,
-    },
-};
+use crate::utils::{misc::deserialize_rich_message, prompts};
 use anyhow::Context as AnyContext;
 use serenity::{
     builder::CreateMessage,
@@ -51,7 +43,10 @@ async fn message_send(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     let channel = ChannelId(channel_number);
 
     let rich_message = if args.is_empty() {
-        prompts::get_rich_message(ctx, msg.channel_id, &msg.author).await?
+        match prompts::get_rich_message(ctx, msg.channel_id, &msg.author).await? {
+            Some(rich_message) => rich_message,
+            None => return Ok(()),
+        }
     } else {
         let content = args.rest();
         if content.starts_with("{") {
