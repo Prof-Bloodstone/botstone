@@ -1,9 +1,10 @@
-use crate::{parsers::message::Message, structures::errors::*};
+use crate::{parsers::message::Message, structures::errors::*, utils::prompts};
 use serenity::{
     builder::CreateMessage,
-    framework::standard::CommandResult,
+    framework::standard::{CommandResult, Args},
     model::id::{ChannelId, GuildId, MessageId},
     prelude::*,
+    model::prelude::*,
 };
 use std::convert::TryFrom;
 
@@ -33,4 +34,24 @@ pub fn deserialize_rich_message(serialized_message: &str) -> Result<CreateMessag
     let deserialized_message =
         json5::from_str::<Message>(serialized_message).map_err(|err| ParseError::InvalidJson(err))?;
     CreateMessage::try_from(deserialized_message)
+}
+
+
+pub async fn get_rich_from_args_or_prompt<'a>(ctx: &'a Context, channel: ChannelId, author: &'a User, args: &'a Args) -> Result<Option<CreateMessage<'a>>, BotstoneError> {
+    let rich_message = if args.is_empty() {
+        match prompts::get_rich_message(ctx, channel, author).await? {
+            Some(rich_message) => rich_message,
+            None => return Ok(None),
+        }
+    } else {
+        let content = args.rest();
+        if content.starts_with("{") {
+            // Assume this is special content, which needs to be parsed
+            deserialize_rich_message(content)?
+        } else {
+            let mut message = CreateMessage::default();
+            message.content(content).to_owned()
+        }
+    };
+    return Ok(Some(rich_message))
 }
