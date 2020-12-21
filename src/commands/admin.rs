@@ -1,4 +1,4 @@
-use crate::utils::{misc::deserialize_rich_message, prompts};
+use crate::utils::misc::{deserialize_rich_message, get_rich_from_args_or_prompt};
 use anyhow::Context as AnyContext;
 use serenity::{
     builder::CreateMessage,
@@ -42,21 +42,11 @@ async fn message_send(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
         .with_context(|| format!("Not a valid channel mention: {:?}", channel_mention))?;
     let channel = ChannelId(channel_number);
 
-    let rich_message = if args.is_empty() {
-        match prompts::get_rich_message(ctx, msg.channel_id, &msg.author).await? {
-            Some(rich_message) => rich_message,
-            None => return Ok(()),
-        }
-    } else {
-        let content = args.rest();
-        if content.starts_with("{") {
-            // Assume this is special content, which needs to be parsed
-            deserialize_rich_message(content)?
-        } else {
-            let mut message = CreateMessage::default();
-            message.content(content).to_owned()
-        }
+    let rich_message = match get_rich_from_args_or_prompt(ctx, msg.channel_id, &msg.author, &args).await? {
+        Some(msg) => msg,
+        None => return Ok(()),
     };
+
     channel
         .send_message(ctx, |msg| {
             msg.0 = rich_message.0;
@@ -75,10 +65,9 @@ async fn message_send(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
 #[required_permissions(Administrator)]
 #[aliases("update")]
 #[min_args(2)]
-async fn message_edit(ctx: &Context, _msg: &Message, mut args: Args) -> CommandResult {
+async fn message_edit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let channel_mention = args.single::<String>().context("Unable to get first argument")?;
     let message_id_str = args.single::<String>().context("Unable to get second argument")?;
-    let content = args.rest();
 
     let channel_number = parse_channel(channel_mention.clone())
         .with_context(|| format!("Not a valid channel mention: {:?}", channel_mention))?;
@@ -90,13 +79,11 @@ async fn message_edit(ctx: &Context, _msg: &Message, mut args: Args) -> CommandR
         .await
         .context("Unable to find message")?;
 
-    let new_message = if content.starts_with("{") {
-        // Assume this is special content, which needs to be parsed
-        deserialize_rich_message(content)?
-    } else {
-        let mut builder = CreateMessage::default();
-        builder.content(content).to_owned()
+    let new_message = match get_rich_from_args_or_prompt(ctx, msg.channel_id, &msg.author, &args).await? {
+        Some(msg) => msg,
+        None => return Ok(()),
     };
+
     message
         .edit(ctx, |m| {
             m.0 = new_message.0;
