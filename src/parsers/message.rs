@@ -44,12 +44,12 @@ pub static NAME_TO_COLOUR_MAPPING: Lazy<HashMap<&str, Colour>> = Lazy::new(|| {
     };
 });
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Default, Clone)]
 pub struct Message {
     #[serde(alias = "c")]
-    content: Option<String>,
+    pub content: Option<String>,
     #[serde(alias = "e")]
-    embed: Option<Embed>,
+    pub embed: Option<Embed>,
 }
 
 impl<'a> TryFrom<Message> for CreateMessage<'a> {
@@ -69,26 +69,26 @@ impl<'a> TryFrom<Message> for CreateMessage<'a> {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Default, Clone)]
 pub struct Embed {
     #[serde(alias = "c")]
     #[serde(alias = "color")]
-    colour: Option<EmbedColourEnum>,
+    pub colour: Option<EmbedColourEnum>,
     #[serde(alias = "d")]
-    description: Option<String>,
+    pub description: Option<String>,
     #[serde(alias = "f")]
     #[serde(alias = "fields")]
-    field: Option<EmbedFieldEnum>,
-    footer: Option<EmbedFooterEnum>,
+    pub field: Option<EmbedFieldEnum>,
+    pub footer: Option<EmbedFooterEnum>,
     #[serde(alias = "a")]
-    author: Option<EmbedAuthor>,
+    pub author: Option<EmbedAuthor>,
 }
 
 impl TryFrom<Embed> for CreateEmbed {
     type Error = ParseError;
 
     fn try_from(value: Embed) -> Result<Self, Self::Error> {
-        let mut builder = CreateEmbed::default();
+        let mut builder = Self::default();
         match value.colour {
             None => Result::<(), Self::Error>::Ok(()),
             Some(v) => {
@@ -123,9 +123,9 @@ impl TryFrom<Embed> for CreateEmbed {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
-enum EmbedColourEnum {
+pub enum EmbedColourEnum {
     Integer(u32),
     String(String),
     RGB(RGBColour),
@@ -158,8 +158,8 @@ impl TryFrom<EmbedColourEnum> for Colour {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
-struct RGBColour {
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct RGBColour {
     #[serde(alias = "r")]
     red: u8,
     #[serde(alias = "g")]
@@ -168,22 +168,22 @@ struct RGBColour {
     blue: u8,
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
-enum EmbedFieldEnum {
+pub enum EmbedFieldEnum {
     Single(EmbedField),
     Vector(Vec<EmbedField>),
 }
-#[derive(Deserialize, Debug, PartialEq)]
-struct EmbedField {
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct EmbedField {
     name: String,
     value: String,
     inline: Option<bool>,
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
-enum EmbedFooterEnum {
+pub enum EmbedFooterEnum {
     TextOnly(String),
     Complex(EmbedFooter),
 }
@@ -207,8 +207,8 @@ impl From<EmbedFooterEnum> for CreateEmbedFooter {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
-struct EmbedFooter {
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct EmbedFooter {
     text: Option<String>,
     url: Option<String>,
 }
@@ -222,8 +222,8 @@ impl From<EmbedFooter> for CreateEmbedFooter {
     }
 }
 
-#[derive(Deserialize, Debug, PartialEq)]
-struct EmbedAuthor {
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct EmbedAuthor {
     #[serde(alias = "n")]
     name: String,
     #[serde(alias = "u")]

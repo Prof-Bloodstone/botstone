@@ -29,6 +29,8 @@ strum_macros = "0.20"
 [dependencies.serenity]
 default-features = true
 features = ["collector", "rustls_backend"]
+git = "https://github.com/serenity-rs/serenity"
+branch = "current"
 # Version defined in patch to override serenity_utils dependency
 [patch.crates-io.serenity]
 git = "https://github.com/serenity-rs/serenity"
