@@ -1,7 +1,6 @@
-use crate::utils::misc::{deserialize_rich_message, get_rich_from_args_or_prompt};
+use crate::utils::misc::{get_rich_from_args_or_prompt};
 use anyhow::Context as AnyContext;
 use serenity::{
-    builder::CreateMessage,
     framework::standard::{macros::command, Args, CommandResult},
     model::prelude::*,
     prelude::*,

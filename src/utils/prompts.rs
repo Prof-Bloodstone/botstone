@@ -1,5 +1,7 @@
-use crate::structures::errors::*;
-use crate::parsers::message::{Message as MessageBuilder, Embed as EmbedBuilder};
+use crate::{
+    parsers::message::{Embed as EmbedBuilder, Message as MessageBuilder},
+    structures::errors::*,
+};
 use once_cell::sync::Lazy;
 use serenity::{
     builder::CreateMessage,
@@ -11,9 +13,9 @@ use serenity::{
     prelude::*,
 };
 use serenity_utils::prompt;
+use std::convert::TryFrom;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use std::convert::TryFrom;
 
 pub static PROMPT_USAGE_DESCRIPTION: Lazy<CreateMessage<'static>> = Lazy::new(|| {
     let mut msg = CreateMessage::default();
@@ -82,7 +84,11 @@ pub async fn get_rich_message<'a>(
             builder.content = Some(msg);
             ()
         }
-        PromptResult::Accept => return CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into()),
+        PromptResult::Accept => {
+            return CreateMessage::try_from(builder)
+                .map(|cm| Some(cm))
+                .map_err(|e| e.into())
+        }
         PromptResult::Cancel | PromptResult::TimedOut => return Ok(None),
         PromptResult::Skip => (),
         PromptResult::Preview => {
@@ -108,7 +114,11 @@ pub async fn get_rich_message<'a>(
             builder.embed = Some(embed);
             ()
         }
-        PromptResult::Accept => return CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into()),
+        PromptResult::Accept => {
+            return CreateMessage::try_from(builder)
+                .map(|cm| Some(cm))
+                .map_err(|e| e.into())
+        }
         PromptResult::Cancel | PromptResult::TimedOut => return Ok(None),
         PromptResult::Skip => (),
         PromptResult::Preview => {
@@ -118,7 +128,9 @@ pub async fn get_rich_message<'a>(
         }
     }
 
-    CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into())
+    CreateMessage::try_from(builder)
+        .map(|cm| Some(cm))
+        .map_err(|e| e.into())
 }
 
 #[derive(EnumIter, Debug, PartialEq)]

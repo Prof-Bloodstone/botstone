@@ -1,10 +1,12 @@
 use crate::{parsers::message::Message, structures::errors::*, utils::prompts};
 use serenity::{
     builder::CreateMessage,
-    framework::standard::{CommandResult, Args},
-    model::id::{ChannelId, GuildId, MessageId},
+    framework::standard::{Args, CommandResult},
+    model::{
+        id::{ChannelId, GuildId, MessageId},
+        prelude::*,
+    },
     prelude::*,
-    model::prelude::*,
 };
 use std::convert::TryFrom;
 
@@ -36,8 +38,12 @@ pub fn deserialize_rich_message(serialized_message: &str) -> Result<CreateMessag
     CreateMessage::try_from(deserialized_message)
 }
 
-
-pub async fn get_rich_from_args_or_prompt<'a>(ctx: &'a Context, channel: ChannelId, author: &'a User, args: &'a Args) -> Result<Option<CreateMessage<'a>>, BotstoneError> {
+pub async fn get_rich_from_args_or_prompt<'a>(
+    ctx: &'a Context,
+    channel: ChannelId,
+    author: &'a User,
+    args: &'a Args,
+) -> Result<Option<CreateMessage<'a>>, BotstoneError> {
     let rich_message = if args.is_empty() {
         match prompts::get_rich_message(ctx, channel, author).await? {
             Some(rich_message) => rich_message,
@@ -53,5 +59,5 @@ pub async fn get_rich_from_args_or_prompt<'a>(ctx: &'a Context, channel: Channel
             message.content(content).to_owned()
         }
     };
-    return Ok(Some(rich_message))
+    return Ok(Some(rich_message));
 }
