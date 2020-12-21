@@ -1,5 +1,5 @@
 use crate::structures::errors::*;
-
+use crate::parsers::message::{Message as MessageBuilder, Embed as EmbedBuilder};
 use once_cell::sync::Lazy;
 use serenity::{
     builder::CreateMessage,
@@ -11,9 +11,9 @@ use serenity::{
     prelude::*,
 };
 use serenity_utils::prompt;
-
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use std::convert::TryFrom;
 
 pub static PROMPT_USAGE_DESCRIPTION: Lazy<CreateMessage<'static>> = Lazy::new(|| {
     let mut msg = CreateMessage::default();
@@ -47,13 +47,19 @@ pub static PROMPT_MESSAGE_CONTENT: Lazy<CreateMessage<'static>> = Lazy::new(|| {
     msg.clone()
 });
 
+pub static PROMPT_EMBED_DESCRIPTION: Lazy<CreateMessage<'static>> = Lazy::new(|| {
+    let mut msg = CreateMessage::default();
+    msg.content("What should the content of the embed be?");
+    msg.clone()
+});
+
 /// Builds rich message from user inputs
 pub async fn get_rich_message<'a>(
     ctx: &'a Context,
     channel_id: ChannelId,
     user: &'a User,
 ) -> Result<Option<CreateMessage<'a>>, BotstoneError> {
-    let mut created_message = CreateMessage::default();
+    let mut builder = MessageBuilder::default();
 
     channel_id
         .send_message(ctx, |m| {
@@ -66,17 +72,43 @@ pub async fn get_rich_message<'a>(
         ctx,
         &PROMPT_MESSAGE_CONTENT,
         channel_id,
-        &created_message,
+        &CreateMessage::default(), // TODO: Make it accept None
         user,
         300.0,
     )
     .await?
     {
         PromptResult::Message(msg) => {
-            created_message.content(msg);
+            builder.content = Some(msg);
             ()
         }
-        PromptResult::Accept => return Ok(Some(created_message)),
+        PromptResult::Accept => return CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into()),
+        PromptResult::Cancel | PromptResult::TimedOut => return Ok(None),
+        PromptResult::Skip => (),
+        PromptResult::Preview => {
+            return Err(BotstoneError::ImpossibleError(Box::new(BotstoneError::Other(
+                "Returned preview as result!".to_string(),
+            ))))
+        }
+    }
+    let created_messsage = CreateMessage::try_from(builder.clone())?;
+    match prompt_for_message_part_previewed(
+        ctx,
+        &PROMPT_EMBED_DESCRIPTION,
+        channel_id,
+        &created_messsage,
+        user,
+        300.0,
+    )
+    .await?
+    {
+        PromptResult::Message(msg) => {
+            let mut embed = EmbedBuilder::default();
+            embed.description = Some(msg);
+            builder.embed = Some(embed);
+            ()
+        }
+        PromptResult::Accept => return CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into()),
         PromptResult::Cancel | PromptResult::TimedOut => return Ok(None),
         PromptResult::Skip => (),
         PromptResult::Preview => {
@@ -86,7 +118,7 @@ pub async fn get_rich_message<'a>(
         }
     }
 
-    Ok(Some(created_message))
+    CreateMessage::try_from(builder).map(|cm| Some(cm)).map_err(|e| e.into())
 }
 
 #[derive(EnumIter, Debug, PartialEq)]
