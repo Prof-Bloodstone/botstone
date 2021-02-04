@@ -3,13 +3,14 @@
 mod commands;
 mod database;
 mod event_handling;
+mod macros;
 mod parsers;
 mod structures;
 mod utils;
 mod version_data;
 
 use crate::{
-    database::queries::{CustomCommands, GuildInfoTable},
+    database::queries::{CustomCommands, GuildInfoTable, ReactionRoles},
     event_handling::{after, before, dynamic_prefix, unrecognised_command, Handler, MY_HELP},
     structures::{
         commands::*,
@@ -96,6 +97,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let guild_info = GuildInfoTable::new(prefix.clone(), pool.clone()).await?;
     let custom_commands = CustomCommands::new(pool.clone());
+    let reaction_roles = ReactionRoles::new(pool.clone());
     {
         let mut data = client.data.write().await;
         // Init shard manager
@@ -109,6 +111,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         data.insert::<VersionDataContainer>(Arc::new(build_data));
         data.insert::<GuildInfoTable>(Arc::new(guild_info));
         data.insert::<CustomCommands>(Arc::new(custom_commands));
+        data.insert::<ReactionRoles>(Arc::new(reaction_roles));
     }
 
     // Listen to interrupts
