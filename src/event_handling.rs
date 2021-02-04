@@ -1,4 +1,5 @@
 use crate::{
+    commands::admin::reaction_role_handler,
     database::queries::{CustomCommands, GuildInfoTable},
     utils::misc::send_rich_serialized_message,
 };
@@ -14,7 +15,7 @@ use serenity::{
         HelpOptions,
     },
     model::{
-        channel::Message,
+        channel::{Message, Reaction},
         event::ResumedEvent,
         gateway::Ready,
         guild::{Guild, GuildUnavailable},
@@ -102,6 +103,11 @@ impl EventHandler for Handler {
         if let Err(e) = guild_info.add_guild(guild.id).await {
             error!("Error adding guild: {:?}", e);
         }
+    }
+
+    #[instrument(skip(ctx))]
+    async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        reaction_role_handler(&ctx, &reaction).await
     }
 }
 

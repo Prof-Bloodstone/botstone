@@ -1,6 +1,6 @@
 use crate::structures::errors::DatabaseError;
 use serenity::{
-    model::id::GuildId,
+    model::id::{ChannelId, GuildId, MessageId, RoleId},
     prelude::{RwLock, TypeMapKey},
 };
 use sqlx::{Done, PgPool};
@@ -137,6 +137,7 @@ impl TypeMapKey for GuildInfoTable {
     type Value = Arc<Self>;
 }
 
+#[derive(Debug)]
 pub struct CustomCommands {
     pool: PgPool,
 }
@@ -146,6 +147,7 @@ impl CustomCommands {
         Self { pool }
     }
 
+    #[instrument]
     pub async fn set_command(
         &self,
         guild_id: GuildId,
@@ -165,6 +167,7 @@ impl CustomCommands {
         Ok(())
     }
 
+    #[instrument]
     pub async fn get_command(
         &self,
         guild_id: GuildId,
@@ -180,6 +183,7 @@ impl CustomCommands {
         Ok(returned.map(|value| value.content))
     }
 
+    #[instrument]
     pub async fn get_command_names(&self, guild_id: GuildId) -> Result<Vec<String>, DatabaseError> {
         let names = sqlx::query!(
             "SELECT name FROM commands WHERE guild_id = $1",
@@ -193,6 +197,7 @@ impl CustomCommands {
         Ok(names)
     }
 
+    #[instrument]
     pub async fn delete_command(&self, guild_id: GuildId, name: String) -> Result<(), DatabaseError> {
         sqlx::query!(
             "DELETE FROM commands WHERE guild_id = $1 AND name = $2",
@@ -206,5 +211,117 @@ impl CustomCommands {
 }
 
 impl TypeMapKey for CustomCommands {
+    type Value = Arc<Self>;
+}
+
+#[derive(Debug)]
+pub struct ReactionRoles {
+    pool: PgPool,
+}
+
+impl ReactionRoles {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    #[instrument]
+    pub async fn set_react_role(
+        &self,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+        message_id: MessageId,
+        role_id: RoleId,
+        reaction: String,
+    ) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "INSERT INTO react_roles (guild_id, channel_id, message_id, role_id, reaction_emoji)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (guild_id, channel_id, message_id, reaction_emoji)
+            DO UPDATE SET role_id = EXCLUDED.role_id",
+            i64::from(guild_id),
+            i64::from(channel_id),
+            i64::from(message_id),
+            i64::from(role_id),
+            reaction
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    #[instrument]
+    pub async fn get_react_role(
+        &self,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+        message_id: MessageId,
+        reaction: String,
+    ) -> Result<Option<RoleId>, DatabaseError> {
+        let returned = sqlx::query!(
+            "SELECT role_id FROM react_roles
+            WHERE guild_id = $1
+            AND channel_id = $2
+            AND message_id = $3
+            AND reaction_emoji = $4",
+            i64::from(guild_id),
+            i64::from(channel_id),
+            i64::from(message_id),
+            reaction
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(returned.map(|value| RoleId::from(value.role_id as u64)))
+    }
+
+    #[instrument]
+    pub async fn delete_react_role(
+        &self,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+        message_id: MessageId,
+        reaction: String,
+    ) -> Result<u64, DatabaseError> {
+        sqlx::query!(
+            "DELETE FROM react_roles
+            WHERE guild_id = $1
+            AND channel_id = $2
+            AND message_id = $3
+            AND reaction_emoji = $4",
+            i64::from(guild_id),
+            i64::from(channel_id),
+            i64::from(message_id),
+            reaction
+        )
+        .execute(&self.pool)
+        .await
+        .map(|done| done.rows_affected())
+        .map_err(|err| err.into())
+    }
+
+    #[instrument]
+    pub async fn delete_react_roles(
+        &self,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+        message_id: MessageId,
+    ) -> Result<u64, DatabaseError> {
+        sqlx::query!(
+            "DELETE FROM react_roles
+            WHERE guild_id = $1
+            AND channel_id = $2
+            AND message_id = $3",
+            i64::from(guild_id),
+            i64::from(channel_id),
+            i64::from(message_id)
+        )
+        .execute(&self.pool)
+        .await
+        .map(|done| done.rows_affected())
+        .map_err(|err| err.into())
+    }
+}
+
+impl TypeMapKey for ReactionRoles {
     type Value = Arc<Self>;
 }

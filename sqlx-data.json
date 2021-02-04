@@ -125,20 +125,6 @@
       ]
     }
   },
-  "7f35d77a17d502bc2fede4148aec943830be3f66ac412dcc2eadedb7195023c1": {
-    "query": "INSERT INTO commands(guild_id, name, content)\n            VALUES($1, $2, $3)\n            ON CONFLICT (guild_id, name)\n            DO UPDATE\n            SET content = EXCLUDED.content",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "9a0202f867997aee89261cfdc4fda0ab2c5029ddc7cf5f57af62c0e39ffbaaa2": {
     "query": "SELECT content FROM commands WHERE guild_id = $1 AND name = $2",
     "describe": {
@@ -167,6 +153,22 @@
       "parameters": {
         "Left": [
           "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "dc737522e51b828bf54e3d8643ce3b95e2033ee1ec7d4f5557bee05ad022ebb4": {
+    "query": "INSERT INTO react_roles (guild_id, channel_id, message_id, role_name, reaction_emoji) VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8",
+          "Text",
+          "Text"
         ]
       },
       "nullable": []
