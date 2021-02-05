@@ -13,7 +13,7 @@ pub struct All;
 pub struct General;
 
 #[group]
-#[commands(prefix, command)]
+#[commands(prefix, command, join_role)]
 pub struct Config;
 
 #[group]

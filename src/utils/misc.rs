@@ -1,4 +1,5 @@
 use crate::{parsers::message::Message, structures::errors::*, utils::prompts};
+
 use serenity::{
     builder::CreateMessage,
     framework::standard::{Args, CommandResult},
@@ -7,6 +8,7 @@ use serenity::{
         prelude::*,
     },
     prelude::*,
+    utils::parse_role,
 };
 use std::convert::TryFrom;
 
@@ -60,4 +62,26 @@ pub async fn get_rich_from_args_or_prompt<'a>(
         }
     };
     return Ok(Some(rich_message));
+}
+
+pub async fn role_from_name_or_mention(
+    ctx: &Context,
+    guild_id: &GuildId,
+    role_string: String,
+) -> Result<RoleId, BotstoneError> {
+    let role_id = if role_string.starts_with('<') {
+        // Assume it's mention
+        parse_role(role_string)
+            .ok_or(CommandError::UserError("Invalid role mention".to_string()))?
+            .into()
+    } else {
+        guild_id
+            .to_partial_guild(ctx)
+            .await
+            .map_err(|e| CommandError::UserDiscordError("Error getting partial guild".to_string(), e))?
+            .role_by_name(role_string.as_str())
+            .ok_or(CommandError::UserError("Invalid role name".to_string()))?
+            .id
+    };
+    return Ok(role_id);
 }

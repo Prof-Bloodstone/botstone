@@ -15,6 +15,8 @@ pub enum BotstoneError {
     DatabaseError(#[from] DatabaseError),
     #[error("serenity error")]
     SerenityError(#[from] SerenityError),
+    #[error("command error")]
+    CommandError(#[from] CommandError),
     #[error("other error: {0}")]
     Other(String),
     #[error("impossible error: {0}")]
@@ -29,6 +31,8 @@ pub enum ParseError {
     InvalidNumber(String, ParseIntError),
     #[error("invalid json `{0:?}`")]
     InvalidJson(Json5Error),
+    #[error("invalid role mention: {0:?}")]
+    InvalidRoleMention(String),
 }
 
 #[derive(ThisError, Debug)]
@@ -47,4 +51,14 @@ pub enum DatabaseError {
     SqlxError(#[from] sqlx::Error),
     #[error("nothing was deleted")]
     NothingDeleted,
+}
+
+#[derive(ThisError, Debug)]
+pub enum CommandError {
+    #[error("generic error: {0}")]
+    GenericError(String),
+    #[error("user discord error `{0}`, cause by: {1:?}")]
+    UserDiscordError(String, SerenityError),
+    #[error("user error: {0}")]
+    UserError(String),
 }

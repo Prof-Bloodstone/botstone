@@ -1,5 +1,5 @@
 use crate::{
-    commands::admin::reaction_role_handler,
+    commands::{admin::reaction_role_handler, config::join_role_handler},
     database::queries::{CustomCommands, GuildInfoTable},
     utils::misc::send_rich_serialized_message,
 };
@@ -18,7 +18,7 @@ use serenity::{
         channel::{Message, Reaction},
         event::ResumedEvent,
         gateway::Ready,
-        guild::{Guild, GuildUnavailable},
+        guild::{Guild, GuildUnavailable, Member},
         id::{GuildId, UserId},
     },
     prelude::*,
@@ -107,7 +107,12 @@ impl EventHandler for Handler {
 
     #[instrument(skip(ctx))]
     async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        reaction_role_handler(&ctx, &reaction).await
+        reaction_role_handler(&ctx, &reaction).await;
+    }
+
+    #[instrument(skip(ctx))]
+    async fn guild_member_addition(&self, ctx: Context, guild_id: GuildId, mut new_member: Member) {
+        join_role_handler(&ctx, &guild_id, &mut new_member).await;
     }
 }
 
