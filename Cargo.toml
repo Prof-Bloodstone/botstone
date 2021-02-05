@@ -42,7 +42,6 @@ default-features = false
 features = ["runtime-tokio-rustls", "macros", "postgres", "migrate", "offline"]
 
 [dev-dependencies]
-cargo-make = "0.32"
 pretty_assertions = "0.6"
 proptest = "0.10"
 rstest = "0.6"
