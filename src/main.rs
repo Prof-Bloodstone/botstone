@@ -10,7 +10,7 @@ mod utils;
 mod version_data;
 
 use crate::{
-    database::queries::{CustomCommands, GuildInfoTable, ReactionRoles},
+    database::queries::{CustomCommands, GuildInfoTable, JoinRoles, ReactionRoles},
     event_handling::{after, before, dynamic_prefix, unrecognised_command, Handler, MY_HELP},
     structures::{
         commands::*,
@@ -19,7 +19,12 @@ use crate::{
     version_data::VersionData,
 };
 use dotenv;
-use serenity::{framework::StandardFramework, http::Http, prelude::*};
+use serenity::{
+    client::bridge::gateway::GatewayIntents,
+    framework::StandardFramework,
+    http::Http,
+    prelude::*,
+};
 use sqlx::{self, postgres::PgPoolOptions};
 use std::{collections::HashSet, env, error::Error, sync::Arc};
 use tokio::signal::unix::{signal, SignalKind};
@@ -92,12 +97,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut client = Client::builder(&token)
         .framework(framework)
         .event_handler(Handler)
+        .intents(
+            GatewayIntents::GUILDS
+                | GatewayIntents::GUILD_MEMBERS
+                | GatewayIntents::GUILD_MESSAGES
+                | GatewayIntents::GUILD_MESSAGE_REACTIONS,
+        )
         .await
         .expect("Err creating client");
 
     let guild_info = GuildInfoTable::new(prefix.clone(), pool.clone()).await?;
     let custom_commands = CustomCommands::new(pool.clone());
     let reaction_roles = ReactionRoles::new(pool.clone());
+    let join_roles = JoinRoles::new(pool.clone());
     {
         let mut data = client.data.write().await;
         // Init shard manager
@@ -112,6 +124,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         data.insert::<GuildInfoTable>(Arc::new(guild_info));
         data.insert::<CustomCommands>(Arc::new(custom_commands));
         data.insert::<ReactionRoles>(Arc::new(reaction_roles));
+        data.insert::<JoinRoles>(Arc::new(join_roles));
     }
 
     // Listen to interrupts

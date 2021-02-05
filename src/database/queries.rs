@@ -325,3 +325,60 @@ impl ReactionRoles {
 impl TypeMapKey for ReactionRoles {
     type Value = Arc<Self>;
 }
+
+#[derive(Debug)]
+pub struct JoinRoles {
+    pool: PgPool,
+}
+
+impl JoinRoles {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    #[instrument]
+    pub async fn add_join_role(&self, guild_id: GuildId, role_id: RoleId) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "INSERT INTO join_roles (guild_id, role_id) VALUES ($1, $2)
+            ON CONFLICT DO NOTHING",
+            i64::from(guild_id),
+            i64::from(role_id),
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    #[instrument]
+    pub async fn get_join_roles(&self, guild_id: GuildId) -> Result<Vec<RoleId>, DatabaseError> {
+        let results = sqlx::query!(
+            "SELECT role_id FROM join_roles
+            WHERE guild_id = $1",
+            i64::from(guild_id),
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|value| RoleId::from(value.role_id as u64))
+        .collect::<Vec<RoleId>>();
+
+        Ok(results)
+    }
+
+    #[instrument]
+    pub async fn delete_join_role(&self, guild_id: GuildId, role_id: RoleId) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "DELETE FROM join_roles WHERE guild_id = $1 AND role_id = $2",
+            i64::from(guild_id),
+            i64::from(role_id),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+}
+
+impl TypeMapKey for JoinRoles {
+    type Value = Arc<Self>;
+}

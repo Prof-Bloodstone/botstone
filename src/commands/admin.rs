@@ -1,11 +1,15 @@
-use crate::{database::queries::ReactionRoles, unwrap_or_return, utils::misc::get_rich_from_args_or_prompt};
+use crate::{
+    database::queries::ReactionRoles,
+    unwrap_or_return,
+    utils::misc::{get_rich_from_args_or_prompt, role_from_name_or_mention},
+};
 use anyhow::Context as AnyContext;
 use core::convert::TryFrom;
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::prelude::*,
     prelude::*,
-    utils::{parse_channel, parse_role},
+    utils::parse_channel,
 };
 use std::fmt::Debug;
 use tracing::error;
@@ -95,6 +99,10 @@ async fn message_edit(ctx: &Context, msg: &Message, mut args: Args) -> CommandRe
     Ok(())
 }
 
+// TODO: Add handlers to automatically delete RR, when:
+// Message with assigned RR is deleted
+// Channel with message with RR is deleted
+// Role is deleted
 /// React to message to get a role
 #[command]
 #[only_in("guilds")]
@@ -140,19 +148,7 @@ async fn reaction_role_set(ctx: &Context, msg: &Message, mut args: Args) -> Comm
         .context("Unable to find message")?;
 
     let guild_id = msg.guild_id.context("Not in a guild")?;
-    let role_id = if role_name.starts_with('<') {
-        // Assume it's mention
-        parse_role(role_name).context("Not a valid role mention")?.into()
-    } else {
-        guild_id
-            .to_partial_guild(ctx)
-            .await
-            .context("Error getting partial guild")?
-            .role_by_name(role_name.as_str())
-            .context("Invalid role name")?
-            .id
-    };
-
+    let role_id = role_from_name_or_mention(&ctx, &guild_id, role_name).await?;
     let reaction = ReactionType::try_from(reaction_string.clone())
         .with_context(|| format!("Invalid emoji: {:?}", reaction_string.clone()))?;
 
