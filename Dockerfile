@@ -1,4 +1,4 @@
-FROM rust:1.46 as builder
+FROM rust:1.48 as builder
 
 WORKDIR /botstone
 ENV USER=root

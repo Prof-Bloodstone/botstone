@@ -1,5 +1,18 @@
 {
   "db": "PostgreSQL",
+  "02533e006356a3393a62c036339b0c49abfbbee74d732cc971b86d7c47376e03": {
+    "query": "DELETE FROM join_roles WHERE guild_id = $1 AND role_id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "166f0a7b5be7ac646348419d021ed115f7cbd21f00d51a7f9e325aab7d882bbc": {
     "query": "UPDATE guild_info SET prefix = $1 WHERE guild_id = $2 RETURNING *",
     "describe": {
@@ -67,6 +80,34 @@
       "columns": [],
       "parameters": {
         "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "496d47393fe62932ac5c6477c2f7a09c494a741d98669620c55dc8b2d5d03996": {
+    "query": "INSERT INTO join_roles (guild_id, role_id) VALUES ($1, $2)\n            ON CONFLICT DO NOTHING",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "670d10e5b4306087cf14565018d890b6cb0d93f3b77972007932e25fa30a327e": {
+    "query": "DELETE FROM react_roles\n            WHERE guild_id = $1\n            AND channel_id = $2\n            AND message_id = $3\n            AND reaction_emoji = $4",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
           "Int8",
           "Text"
         ]
@@ -146,6 +187,20 @@
       ]
     }
   },
+  "a3334cfbab418a035f3813fe91f5c6de4dff6bd2b5b9ae26da91b87ecd0323d0": {
+    "query": "DELETE FROM react_roles\n            WHERE guild_id = $1\n            AND channel_id = $2\n            AND message_id = $3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "b0d7420a7d8e020377ca68d17f528276a26c85d5d62ae1d33086753200bf73af": {
     "query": "DELETE FROM guild_info WHERE guild_id = $1",
     "describe": {
@@ -158,8 +213,28 @@
       "nullable": []
     }
   },
-  "dc737522e51b828bf54e3d8643ce3b95e2033ee1ec7d4f5557bee05ad022ebb4": {
-    "query": "INSERT INTO react_roles (guild_id, channel_id, message_id, role_name, reaction_emoji) VALUES ($1, $2, $3, $4, $5)",
+  "dd17d5ee962a46f6f4d77df9b4f4c7cacef59d313d33ecbce8d412c3363b4b04": {
+    "query": "SELECT role_id FROM join_roles\n            WHERE guild_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "role_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "e9fc8a2b7522eecc23fc1502b2dd77aeaad914d7891546015e4c4846a1a8362b": {
+    "query": "INSERT INTO react_roles (guild_id, channel_id, message_id, role_id, reaction_emoji)\n            VALUES ($1, $2, $3, $4, $5)\n            ON CONFLICT (guild_id, channel_id, message_id, reaction_emoji)\n            DO UPDATE SET role_id = EXCLUDED.role_id",
     "describe": {
       "columns": [],
       "parameters": {
@@ -167,11 +242,34 @@
           "Int8",
           "Int8",
           "Int8",
-          "Text",
+          "Int8",
           "Text"
         ]
       },
       "nullable": []
+    }
+  },
+  "ee17d4af19a7b5c69952956c7adefb7240e0f87f9b7907afc10f99c783b4ca33": {
+    "query": "SELECT role_id FROM react_roles\n            WHERE guild_id = $1\n            AND channel_id = $2\n            AND message_id = $3\n            AND reaction_emoji = $4",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "role_id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   }
 }
