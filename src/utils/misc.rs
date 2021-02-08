@@ -75,13 +75,19 @@ pub async fn role_from_name_or_mention(
             .ok_or(CommandError::UserError("Invalid role mention".to_string()))?
             .into()
     } else {
-        guild_id
-            .to_partial_guild(ctx)
-            .await
-            .map_err(|e| CommandError::UserDiscordError("Error getting partial guild".to_string(), e))?
-            .role_by_name(role_string.as_str())
-            .ok_or(CommandError::UserError("Invalid role name".to_string()))?
-            .id
+        if role_string == "everyone" {
+            // Special case - everyone role is always equal to guild id
+            // and is not retrieve-able by name
+            RoleId::from(guild_id.0)
+        } else {
+            guild_id
+                .to_partial_guild(ctx)
+                .await
+                .map_err(|e| CommandError::UserDiscordError("Error getting partial guild".to_string(), e))?
+                .role_by_name(role_string.as_str())
+                .ok_or(CommandError::UserError("Invalid role name".to_string()))?
+                .id
+        }
     };
     return Ok(role_id);
 }

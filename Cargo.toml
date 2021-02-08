@@ -28,7 +28,7 @@ strum_macros = "0.20"
 
 [dependencies.serenity]
 default-features = true
-features = ["collector", "rustls_backend"]
+features = ["collector", "rustls_backend", "cache"]
 version = "0.10"
 
 [dependencies.sqlx]

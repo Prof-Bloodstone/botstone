@@ -3,7 +3,7 @@ use serenity::{
     model::id::{ChannelId, GuildId, MessageId, RoleId},
     prelude::{RwLock, TypeMapKey},
 };
-use sqlx::{PgPool};
+use sqlx::PgPool;
 use std::{
     collections::{HashMap, HashSet},
     fmt,

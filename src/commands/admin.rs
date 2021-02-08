@@ -11,6 +11,8 @@ use serenity::{
     prelude::*,
     utils::parse_channel,
 };
+
+use serenity::futures::StreamExt;
 use std::fmt::Debug;
 use tracing::error;
 
@@ -250,7 +252,7 @@ pub async fn reaction_role_handler(ctx: &Context, reaction: &Reaction) {
     let mut member = unwrap_or_return!(
         guild_id.member(&ctx, user.id).await,
         |e: &dyn Debug| {
-            error!("Error getting ReactRole guild: {:?}", e);
+            error!("Error getting ReactRole member: {:?}", e);
         },
         {}
     );
@@ -267,4 +269,51 @@ pub async fn reaction_role_handler(ctx: &Context, reaction: &Reaction) {
     if let Err(e) = reaction.delete(&ctx).await {
         error!("Error deleting ReactRole reaction: {:?}", e);
     }
+}
+
+/// Give role in bulk to people with another role
+/// Usage: .bulk_role NewSuperRole OldRole
+#[command]
+#[only_in("guilds")]
+#[required_permissions(Administrator)]
+#[num_args(2)]
+async fn bulk_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let guild_id = msg.guild_id.context("Not in a guild")?;
+    let mut role_ids = Vec::new();
+    for role_name_result in args.iter::<String>() {
+        let role_name = role_name_result.context("Unable to iterate over arguments!")?;
+        let role_id = role_from_name_or_mention(&ctx, &guild_id, role_name.clone())
+            .await
+            .context(format!("Unable to parse role: `{}`", role_name))?;
+        if u64::from(role_id) != u64::from(guild_id) {
+            // Special case for @everyone
+            role_ids.push(role_id);
+        }
+    }
+    let role_to_add = role_ids.swap_remove(0);
+
+    let mut role_add_counter = 0;
+    let mut members_stream = guild_id.members_iter(&ctx).boxed();
+    while let Some(member_result) = members_stream.next().await {
+        let mut member = member_result
+            .context("Error getting member information - role application might be in partial state")?;
+        if role_ids.iter().all(|role_id| member.roles.contains(role_id)) {
+            member.add_role(&ctx, role_to_add).await.context(format!(
+                "Error giving {} a role.",
+                member.nick.unwrap_or(member.user.name)
+            ))?;
+            role_add_counter += 1;
+        }
+    }
+
+    msg.channel_id
+        .send_message(ctx, |m| {
+            m.content(format!(
+                "Succesfully applied role to {} members.",
+                role_add_counter
+            ))
+        })
+        .await?;
+
+    Ok(())
 }

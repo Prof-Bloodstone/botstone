@@ -17,7 +17,7 @@ pub struct General;
 pub struct Config;
 
 #[group]
-#[commands(message, reaction_role)]
+#[commands(message, reaction_role, bulk_role)]
 pub struct Admin;
 
 #[group]
