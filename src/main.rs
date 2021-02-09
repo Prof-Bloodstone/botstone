@@ -98,10 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .framework(framework)
         .event_handler(Handler)
         .intents(
-            GatewayIntents::GUILDS
-                | GatewayIntents::GUILD_MEMBERS
-                | GatewayIntents::GUILD_MESSAGES
-                | GatewayIntents::GUILD_MESSAGE_REACTIONS,
+            GatewayIntents::all()
         )
         .await
         .expect("Err creating client");
