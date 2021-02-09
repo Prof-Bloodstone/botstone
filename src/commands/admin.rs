@@ -2,6 +2,7 @@ use crate::{
     database::queries::ReactionRoles,
     unwrap_or_return,
     utils::misc::{get_rich_from_args_or_prompt, role_from_name_or_mention},
+    structures::context::PublicData,
 };
 use anyhow::Context as AnyContext;
 use core::convert::TryFrom;
@@ -214,13 +215,22 @@ async fn reaction_role_remove(ctx: &Context, msg: &Message, mut args: Args) -> C
 
 pub async fn reaction_role_handler(ctx: &Context, reaction: &Reaction) {
     // TODO: Replace error logging here with some timed-out messages and lower priority logs
-    let reaction_roles = {
+    let (reaction_roles, bot_id) = {
         let data = ctx.data.read().await;
-        match data.get::<ReactionRoles>() {
+        let rr = match data.get::<ReactionRoles>() {
             Some(rr) => rr.clone(),
             None => return,
-        }
+        };
+        let bot_id = match data.get::<PublicData>() {
+            Some(public_data) => public_data.bot_id,
+            None => return,
+        };
+        (rr, bot_id)
     };
+    if reaction.user_id == Some(bot_id) {
+        // Ignore our own reactions
+        return;
+    }
 
     let guild_id = match reaction.guild_id {
         Some(guild_id) => guild_id,
