@@ -1,9 +1,23 @@
 use serenity::{model::prelude::*, prelude::*};
+use tracing::debug;
 
 pub async fn check_permission(ctx: &Context, msg: &Message, permission: Permissions) -> bool {
-    let channel = msg.channel(ctx).await.unwrap().guild().unwrap();
+    let guild_id = match msg.guild_id {
+        Some(guild_id) => guild_id,
+        None => return false,
+    };
+    let member = match guild_id.member(&ctx, msg.author.id).await {
+        Ok(member) => member,
+        Err(_) => return false,
+    };
 
-    let permissions = channel.permissions_for_user(ctx, msg.author.id).await.unwrap();
+    let permissions = match member.permissions(&ctx).await {
+        Ok(perms) => perms,
+        Err(e) => {
+            debug!("Error getting user permission: {}", e);
+            return false;
+        }
+    };
 
     if permissions.contains(permission) {
         return true;

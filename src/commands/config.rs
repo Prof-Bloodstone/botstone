@@ -1,6 +1,6 @@
 use crate::{
     database::queries::{CustomCommands, GuildInfoTable, JoinRoles},
-    structures::context::PublicData,
+    structures::{context::PublicData, errors::*},
     unwrap_or_return,
     utils::{
         misc::{role_from_name_or_mention, send_rich_serialized_message},
@@ -21,7 +21,7 @@ use tracing::error;
 #[num_args(1)]
 async fn prefix(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if !permissions::check_permission(ctx, msg, Permissions::MANAGE_MESSAGES).await {
-        return Ok(());
+        return Err(CommandError::UserError("Lacking permissions to run this command".to_string()).into());
     }
     let guild_info = {
         let data = ctx.data.read().await;

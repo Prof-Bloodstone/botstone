@@ -1,6 +1,6 @@
 [package]
 name = "botstone"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Professor Bloodstone <prof@bloodstone.dev>"]
 edition = "2018"
 build = "build.rs"
