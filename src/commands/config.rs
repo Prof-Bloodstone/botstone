@@ -185,7 +185,7 @@ async fn command_list(ctx: &Context, msg: &Message) -> CommandResult {
 /// Every time a new member joins the guild, they receive given roles
 #[command]
 #[only_in("guilds")]
-#[required_permissions(Administrator)]
+#[required_permissions(Manage_Roles)]
 #[sub_commands(join_role_add, join_role_remove, join_role_list)]
 async fn join_role(ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id

@@ -275,7 +275,7 @@ pub async fn reaction_role_handler(ctx: &Context, reaction: &Reaction) {
 /// Usage: .bulk_role NewSuperRole OldRole
 #[command]
 #[only_in("guilds")]
-#[required_permissions(Administrator)]
+#[required_permissions(Manage_Roles)]
 #[num_args(2)]
 async fn bulk_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = msg.guild_id.context("Not in a guild")?;
