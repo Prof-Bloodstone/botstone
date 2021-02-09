@@ -97,9 +97,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut client = Client::builder(&token)
         .framework(framework)
         .event_handler(Handler)
-        .intents(
-            GatewayIntents::all()
-        )
+        .intents(GatewayIntents::all())
         .await
         .expect("Err creating client");
 

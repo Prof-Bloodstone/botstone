@@ -279,6 +279,11 @@ pub async fn reaction_role_handler(ctx: &Context, reaction: &Reaction) {
 #[num_args(2)]
 async fn bulk_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild_id = msg.guild_id.context("Not in a guild")?;
+    // _typing is stopped when it's dropped
+    let _typing = msg
+        .channel_id
+        .start_typing(&ctx.http)
+        .context("Unable to start typing")?;
     let mut role_ids = Vec::new();
     for role_name_result in args.iter::<String>() {
         let role_name = role_name_result.context("Unable to iterate over arguments!")?;
@@ -297,7 +302,9 @@ async fn bulk_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
     while let Some(member_result) = members_stream.next().await {
         let mut member = member_result
             .context("Error getting member information - role application might be in partial state")?;
-        if role_ids.iter().all(|role_id| member.roles.contains(role_id)) {
+        if !member.roles.contains(&role_to_add)
+            && role_ids.iter().all(|role_id| member.roles.contains(role_id))
+        {
             member.add_role(&ctx, role_to_add).await.context(format!(
                 "Error giving {} a role.",
                 member.nick.unwrap_or(member.user.name)
