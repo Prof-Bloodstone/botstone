@@ -25,4 +25,5 @@ docker tag "${img_full_name}" "${img_name}:latest"
 docker image save "${img_full_name}" --output "${root_dir}/${relative_image_location}"
 
 printf 'Successfully built docker image as %s and saved it to %s\n' "${img_full_name@Q}" "${relative_image_location@Q}"
+printf 'You might now load the tar by running '\''docker image load --input %s'\' "$(basename "${relative_image_location}")"
 

@@ -85,6 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             c.owners(owners)
                 .dynamic_prefix(dynamic_prefix)
                 .on_mention(Some(bot_id))
+                .delimiters(vec![" ", "\n"])
         })
         .before(before)
         .after(after)
