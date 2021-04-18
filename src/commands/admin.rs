@@ -1,8 +1,8 @@
 use crate::{
     database::queries::ReactionRoles,
+    structures::context::PublicData,
     unwrap_or_return,
     utils::misc::{get_rich_from_args_or_prompt, role_from_name_or_mention},
-    structures::context::PublicData,
 };
 use anyhow::Context as AnyContext;
 use core::convert::TryFrom;
