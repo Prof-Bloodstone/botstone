@@ -1,9 +1,8 @@
 use crate::ShardManagerContainer;
 use serenity::{
-    framework::standard::{macros::command, Args, CommandResult},
+    framework::standard::{macros::command, CommandResult},
     model::prelude::*,
     prelude::*,
-    utils::MessageBuilder,
 };
 
 #[command]
@@ -19,22 +18,5 @@ async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(());
     }
 
-    Ok(())
-}
-
-#[command]
-async fn _test(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let mut builder = MessageBuilder::new();
-    builder.push_line(format!("You passed following {} arguments:", args.len()));
-    for (pos, arg) in args.iter::<String>().enumerate() {
-        builder.push(format!("{}: #{}#\n", pos, arg.unwrap()));
-    }
-    builder.push_line("All args:").push(args.message());
-    msg.channel_id.say(&ctx.http, builder.build()).await?;
-    msg.channel_id
-        .send_message(ctx, |msg| {
-            msg.reactions(vec![ReactionType::Unicode(":left_arrow:".to_string())].into_iter())
-        })
-        .await?;
     Ok(())
 }

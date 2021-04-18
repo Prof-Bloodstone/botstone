@@ -25,6 +25,6 @@ pub struct Admin;
 pub struct Support;
 
 #[group]
-#[commands(quit, _test)]
+#[commands(quit)]
 #[owners_only]
 pub struct Owner;
