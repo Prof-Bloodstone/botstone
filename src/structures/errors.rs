@@ -6,6 +6,7 @@ use std::{
     num::ParseIntError,
 };
 use thiserror::Error as ThisError;
+use anyhow::Error as AnyhowError;
 
 #[derive(ThisError, Debug)]
 pub enum BotstoneError {
@@ -17,6 +18,8 @@ pub enum BotstoneError {
     SerenityError(#[from] SerenityError),
     #[error("command error")]
     CommandError(#[from] CommandError),
+    #[error("anyhow error")]
+    AnyhowError(#[from] AnyhowError),
     #[error("other error: {0}")]
     Other(String),
     #[error("impossible error: {0}")]
@@ -33,6 +36,8 @@ pub enum ParseError {
     InvalidJson(Json5Error),
     #[error("invalid role mention: {0:?}")]
     InvalidRoleMention(String),
+    #[error(transparent)]
+    PermissionParseError(#[from] PermissionParseError),
 }
 
 #[derive(ThisError, Debug)]
@@ -43,6 +48,12 @@ pub enum ColourParseError {
     InvalidColourHexValue(String, ParseIntError),
     #[error("unknown colour name: `{0:?}`")]
     UnknownColourName(String),
+}
+
+#[derive(ThisError, Debug)]
+pub enum PermissionParseError {
+    #[error("invalid permission string: `{0:?}`")]
+    InvalidPermissionString(String),
 }
 
 #[derive(ThisError, Debug)]
