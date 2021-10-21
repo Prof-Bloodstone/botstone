@@ -9,6 +9,9 @@ mod structures;
 mod utils;
 mod version_data;
 
+#[macro_use]
+extern crate derive_new;
+
 use crate::{
     database::queries::{CustomCommands, GuildInfoTable, JoinRoles, ReactionRoles},
     event_handling::{after, before, dynamic_prefix, unrecognised_command, Handler, MY_HELP},

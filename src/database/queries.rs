@@ -1,8 +1,9 @@
-use crate::structures::errors::DatabaseError;
+use crate::{parsers::permissions::Permission, structures::errors::DatabaseError};
 use serenity::{
     model::id::{ChannelId, GuildId, MessageId, RoleId},
     prelude::{RwLock, TypeMapKey},
 };
+use getset::Getters;
 use sqlx::PgPool;
 use std::{
     collections::{HashMap, HashSet},
@@ -382,3 +383,55 @@ impl JoinRoles {
 impl TypeMapKey for JoinRoles {
     type Value = Arc<Self>;
 }
+
+#[derive(new, Getters)]
+#[getset(get = "pub")]
+pub struct RolePermission {
+    role_id: RoleId,
+    permission: Permission,
+}
+
+
+#[derive(Debug)]
+pub struct Permissions {
+    pool: PgPool,
+}
+
+impl Permissions {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    #[instrument]
+    pub async fn add_permission(&self, guild_id: GuildId, role_id: RoleId, permission: Permission) -> Result<(), DatabaseError> {
+        sqlx::query!(
+            "INSERT INTO permissions (guild_id, role_id, permission, wildcard) VALUES ($1, $2, $3, $4)",
+            i64::from(guild_id),
+            i64::from(role_id),
+            permission.node(),
+            permission.wildcard(),
+            )
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    #[instrument]
+    pub async fn get_permissions(&self, guild_id: GuildId) -> Result<Vec<RolePermission>, DatabaseError> {
+        let results = sqlx::query!(
+            "SELECT role_id, permission, wildcard FROM permissions WHERE guild_id = $1",
+            i64::from(guild_id),
+            )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|value| RolePermission::new(RoleId::from(value.role_id as u64), Permission::new(value.permission, value.wildcard)))
+        .collect::<Vec<RolePermission>>();
+        Ok(results)
+    }
+}
+
+impl TypeMapKey for Permissions {
+    type Value = Arc<Self>;
+}
+
