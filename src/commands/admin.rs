@@ -1,8 +1,11 @@
 use crate::{
     database::queries::ReactionRoles,
-    structures::context::PublicData,
+    structures::context::{PublicData},
     unwrap_or_return,
-    utils::misc::{get_rich_from_args_or_prompt, role_from_name_or_mention},
+    utils::{
+        channel::AsEmoji,
+        misc::{get_rich_from_args_or_prompt, role_from_name_or_mention},
+    },
 };
 use anyhow::Context as AnyContext;
 use core::convert::TryFrom;
@@ -15,7 +18,7 @@ use serenity::{
 
 use serenity::futures::StreamExt;
 use std::fmt::Debug;
-use tracing::error;
+use tracing::{debug, error, info};
 
 /// Custom messages supporting embeds
 /// You can edit existing message
@@ -332,5 +335,44 @@ async fn bulk_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         })
         .await?;
 
+    Ok(())
+}
+
+/// React to a given message with emoji(s)
+#[command]
+#[min_args(3)]
+#[only_in("guilds")]
+#[required_permissions(Manage_Roles)]
+#[usage = "<channel_mention> <message_id> <EMOJI> [<EMOJI2>, ...]"]
+async fn react(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let channel_mention = args.single::<String>().context("Unable to get first argument")?;
+    let message_id_str = args.single::<String>().context("Unable to get second argument")?;
+    let channel_number = parse_channel(channel_mention.clone())
+        .with_context(|| format!("Not a valid channel mention: {:?}", channel_mention))?;
+    let channel = ChannelId(channel_number);
+    let message_id = u64::from_str_radix(message_id_str.as_str(), 10).context("Invalid message number")?;
+
+    let message = channel
+        .message(ctx, message_id)
+        .await
+        .context("Unable to find message")?;
+
+    for idx in 2..args.len() {
+        let emoji_arg = args
+            .single::<String>()
+            .context(format!("Unable to get {:?} argument", idx))?;
+        debug!("Trying to parse {:?} as emoji", emoji_arg);
+        match emoji_arg.as_emoji() {
+            Ok(reaction) => {
+                info!("Found reaction: {:?}", reaction);
+                message.react(ctx, reaction).await?;
+            }
+            Err(e) => {
+                let error_msg = format!("Unable to parse {:?} as emoji", emoji_arg);
+                error!("{:?} - the full error was {:?}", error_msg, &e);
+                msg.reply(&ctx.http, error_msg).await?;
+            }
+        };
+    }
     Ok(())
 }

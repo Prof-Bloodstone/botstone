@@ -1,13 +1,13 @@
-use crate::{structures::context::ShardManagerContainer, utils::channel::AsEmoji};
+use crate::{structures::context::ShardManagerContainer};
 use anyhow::anyhow;
 use chrono::Utc;
 use serenity::{
     client::bridge::gateway::ShardId,
-    framework::standard::{macros::command, Args, CommandResult},
+    framework::standard::{macros::command, CommandResult},
     model::prelude::*,
     prelude::*,
 };
-use tracing::{debug, error, info};
+use tracing::{debug};
 
 // Based on implementation by @Flat at https://github.com/Flat/Lupusregina-/blob/0abda1835625f1e4748cc2a9e89fbaf938877990/src/commands/general.rs#L201
 #[command]
@@ -48,28 +48,5 @@ async fn ping(context: &Context, msg: &Message) -> CommandResult {
         ))
     })
     .await?;
-    Ok(())
-}
-
-#[command]
-#[num_args(1)]
-#[usage = ".react <EMOJI>"]
-async fn react(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    if args.len() == 1 {
-        let emoji_arg = args.single_quoted::<String>().unwrap();
-        debug!("Trying to parse {:?} as emoji", emoji_arg);
-        match emoji_arg.as_emoji() {
-            Ok(reaction) => {
-                info!("Found reaction: {:?}", reaction);
-                msg.react(ctx, reaction).await?;
-            }
-            Err(e) => {
-                let error_msg = format!("Unable to parse {:?} as emoji", emoji_arg);
-                error!("{:?} - the full error was {:?}", error_msg, &e);
-                msg.reply(&ctx.http, error_msg).await?;
-            }
-        };
-    }
-
     Ok(())
 }

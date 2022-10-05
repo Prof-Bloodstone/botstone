@@ -9,7 +9,7 @@ use serenity::framework::standard::macros::group;
 pub struct All;
 
 #[group]
-#[commands(ping, react)]
+#[commands(ping)]
 pub struct General;
 
 #[group]
@@ -17,7 +17,7 @@ pub struct General;
 pub struct Config;
 
 #[group]
-#[commands(message, reaction_role, bulk_role)]
+#[commands(message, reaction_role, bulk_role, react)]
 pub struct Admin;
 
 #[group]
